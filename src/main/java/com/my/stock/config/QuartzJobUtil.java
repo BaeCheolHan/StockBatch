@@ -1,5 +1,7 @@
 package com.my.stock.config;
 
+import org.quartz.JobDetail;
+import org.quartz.Trigger;
 import org.springframework.batch.core.configuration.JobLocator;
 import org.springframework.batch.core.launch.JobLauncher;
 
@@ -24,8 +26,17 @@ public class QuartzJobUtil {
 		QuartzJobUtil.jobLocator = jobLocator;
 	}
 	
-	private static List<Map<String, Object>> listBatchJob = new ArrayList<Map<String,Object>>();
-	public static List<Map<String, Object>> getListBatchJob() {
-		return listBatchJob;
+//	private static List<Map<String, Trigger>> listBatchJob = new ArrayList<>();
+
+	private static List<Trigger> triggers = new ArrayList<>();
+	private static List<JobDetail> jobDetails = new ArrayList<>();
+
+	public static List<Trigger> getTriggers() {
+		return triggers;
 	}
+
+	public static List<JobDetail> getJobDetails() {
+		return jobDetails;
+	}
+
 }

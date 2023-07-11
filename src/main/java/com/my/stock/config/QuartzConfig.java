@@ -1,7 +1,5 @@
-package com.mobfeed.batch.config;
+package com.my.stock.config;
 
-import com.my.stock.config.QuartzJob;
-import com.my.stock.config.QuartzJobUtil;
 import lombok.RequiredArgsConstructor;
 import org.quartz.*;
 import org.springframework.batch.core.configuration.JobLocator;
@@ -24,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-
 @Configuration
 @RequiredArgsConstructor
 public class QuartzConfig implements InitializingBean {
@@ -32,7 +29,9 @@ public class QuartzConfig implements InitializingBean {
 
 	private final JobLocator jobLocator;
 
-	private final TransactionManager transactionManager;
+	protected final TransactionManager transactionManager;
+
+	private final DataSource dataSource;
 
 	@Override
 	public void afterPropertiesSet() {
@@ -56,59 +55,15 @@ public class QuartzConfig implements InitializingBean {
 	}
 
 	@Bean
-	public SchedulerFactoryBean schedulerFactoryBean(DataSource dataSource) throws IOException {
-		List<Trigger> listTrigger = new ArrayList<>();
-		List<JobDetail> listJobDetail = new ArrayList<>();
-		for (Map<String, Object> jobInfo : QuartzJobUtil.getListBatchJob()) {
-			listJobDetail.add(createJobDetail(createJobDataMap((String) jobInfo.get("jobName"))));
-			if (jobInfo.containsKey("cronExpr")) {
-				listTrigger.add(createJobTrigger(listJobDetail.get(listJobDetail.size() - 1), (String) jobInfo.get("cronExpr")));
-			} else {
-				listTrigger.add(createJobTrigger(listJobDetail.get(listJobDetail.size() - 1), Integer.parseInt(jobInfo.get("timeInterval").toString())));
-			}
-		}
+	public SchedulerFactoryBean schedulerFactoryBean() throws IOException {
 
 		SchedulerFactoryBean scheduler = new SchedulerFactoryBean();
 		scheduler.setDataSource(dataSource);
 		scheduler.setTransactionManager((PlatformTransactionManager) transactionManager);
 		scheduler.setQuartzProperties(quartzProperties());
-		scheduler.setTriggers(listTrigger.toArray(new Trigger[listTrigger.size()]));
-		scheduler.setJobDetails(listJobDetail.toArray(new JobDetail[listJobDetail.size()]));
+		scheduler.setTriggers(QuartzJobUtil.getTriggers().toArray(new Trigger[QuartzJobUtil.getTriggers().size()]));
+		scheduler.setJobDetails(QuartzJobUtil.getJobDetails().toArray(new JobDetail[QuartzJobUtil.getJobDetails().size()]));
 		return scheduler;
 	}
 
-	private JobDataMap createJobDataMap(String jobName) {
-		JobDataMap jobDataMap = new JobDataMap();
-		jobDataMap.put("jobName", jobName);
-		return jobDataMap;
-	}
-
-	private JobDetail createJobDetail(JobDataMap jobDataMap) {
-		return JobBuilder
-				.newJob(QuartzJob.class)
-				.withIdentity(jobDataMap.getString("jobName").concat("Detail"))
-				.setJobData(jobDataMap)
-				.storeDurably()
-				.build();
-	}
-
-	private Trigger createJobTrigger(JobDetail jobDetail, int value) {
-		SimpleScheduleBuilder scheduleBuilder = SimpleScheduleBuilder.simpleSchedule().withIntervalInSeconds(value).repeatForever();
-		return TriggerBuilder
-				.newTrigger()
-				.forJob(jobDetail)
-				.withIdentity(jobDetail.getJobDataMap().getString("jobName").concat("Trigger"))
-				.withSchedule(scheduleBuilder)
-				.build();
-	}
-
-	private Trigger createJobTrigger(JobDetail jobDetail, String expr) {
-		CronScheduleBuilder scheduleBuilder = CronScheduleBuilder.cronSchedule(expr);
-		return TriggerBuilder
-				.newTrigger()
-				.forJob(jobDetail)
-				.withIdentity(jobDetail.getJobDataMap().getString("jobName").concat("Trigger"))
-				.withSchedule(scheduleBuilder)
-				.build();
-	}
 }
