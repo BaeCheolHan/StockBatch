@@ -11,13 +11,15 @@ import static org.quartz.JobBuilder.newJob;
 
 public abstract class BaseBatch {
 	public BaseBatch(String jobName, String cronExp, HashMap<String, Object> param) {
-//		Map<String, Trigger> jobInfo = new HashMap<>();
-//		jobInfo.put(jobName, buildJobTrigger(cronExp));
-
 		if (param == null) param = new HashMap<>();
 		QuartzJobUtil.getJobDetails().add(buildJobDetail(jobName, param));
 		QuartzJobUtil.getTriggers().add(buildJobTrigger(jobName, cronExp, param));
 
+	}
+
+	public BaseBatch(String jobName, int timeInterval, HashMap<String, Object> param) {
+		QuartzJobUtil.getJobDetails().add(buildJobDetail(jobName, param));
+		QuartzJobUtil.getTriggers().add(buildJobTrigger(jobName, timeInterval, param));
 	}
 
 	public Trigger buildJobTrigger(String jobName, String scheduleExp, HashMap<String, Object> param) {
@@ -26,6 +28,17 @@ public abstract class BaseBatch {
 				.forJob(jobDetail)
 				.withIdentity(jobDetail.getJobDataMap().getString("jobName").concat("Trigger"))
 				.withSchedule(CronScheduleBuilder.cronSchedule(scheduleExp))
+				.build();
+	}
+
+	private Trigger buildJobTrigger(String jobName, int value, HashMap<String, Object> param) {
+		JobDetail jobDetail = buildJobDetail(jobName, param);
+		SimpleScheduleBuilder scheduleBuilder = SimpleScheduleBuilder.simpleSchedule().withIntervalInSeconds(value).repeatForever();
+		return TriggerBuilder
+				.newTrigger()
+				.forJob(jobDetail)
+				.withIdentity(jobDetail.getJobDataMap().getString("jobName").concat("Trigger"))
+				.withSchedule(scheduleBuilder)
 				.build();
 	}
 
@@ -40,5 +53,7 @@ public abstract class BaseBatch {
 				.storeDurably()
 				.build();
 	}
+
+
 
 }
