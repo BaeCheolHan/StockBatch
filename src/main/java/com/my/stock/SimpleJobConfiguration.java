@@ -3,7 +3,10 @@ package com.my.stock;
 
 import com.my.stock.base.BaseBatch;
 import lombok.extern.slf4j.Slf4j;
+import org.quartz.JobListener;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
@@ -17,21 +20,38 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 public class SimpleJobConfiguration extends BaseBatch {
 	public SimpleJobConfiguration() {
-		super("simpleJob", "0/1 * * * * ?", null);
+		super("simpleJob", "0 0/20 * * * ?", null);
 	}
 
+
+
 	@Bean
-	public Job simpleJob1(JobRepository jobRepository, Step simpleStep1) {
+	public Job simpleJob(JobRepository jobRepository, Step simpleStep) {
 		return new JobBuilder("simpleJob", jobRepository)
-				.start(simpleStep1)
+				.listener(jobListener)
+				.start(simpleStep)
 				.build();
 	}
 
+	private final JobExecutionListener jobListener = new JobExecutionListener() {
+
+		@Override
+		public void beforeJob(JobExecution jobExecution) {
+			System.out.println(" + " + jobExecution.getJobParameters().getString("test"));
+		}
+
+		@Override
+		public void afterJob(JobExecution jobExecution) {
+		}
+
+
+	};
+
 	@Bean
-	public Step simpleStep1(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
-		return new StepBuilder("simpleStep1", jobRepository)
+	public Step simpleStep(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
+		return new StepBuilder("simpleStep", jobRepository)
 				.tasklet((contribution, chunkContext) -> {
-					log.info(">>>>> This is Step1");
+					log.info(">>>>> This is Step");
 					return RepeatStatus.FINISHED;
 				}, platformTransactionManager).build();
 	}

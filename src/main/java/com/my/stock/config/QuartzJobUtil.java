@@ -7,7 +7,6 @@ import org.springframework.batch.core.launch.JobLauncher;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class QuartzJobUtil {
 	private static JobLauncher jobLauncher;
