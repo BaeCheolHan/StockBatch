@@ -78,7 +78,7 @@ public class NowKrStockPriceGettingJob extends BaseBatch {
 		@Override
 		public String read() {
 			if (stockSymbols == null) {
-				stockSymbols = stockRepository.findSymbolGroupBySymbol("KR");
+				stockSymbols = stockRepository.findSymbolByNationalGroupBySymbol("KR");
 			}
 
 			if (stockSymbols.isEmpty()) {

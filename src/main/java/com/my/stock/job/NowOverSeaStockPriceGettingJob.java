@@ -2,11 +2,13 @@ package com.my.stock.job;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.my.stock.base.BaseBatch;
-import com.my.stock.dto.KrNowStockPriceWrapper;
+import com.my.stock.config.QuartzJobUtil;
+import com.my.stock.dto.OverSeaNowStockPriceWrapper;
+import com.my.stock.dto.SymbolAndCode;
+import com.my.stock.dto.SymbolAndCodeInterface;
 import com.my.stock.rdb.repository.StockRepository;
-import com.my.stock.redis.entity.KrNowStockPrice;
 import com.my.stock.redis.entity.OverSeaNowStockPrice;
-import com.my.stock.redis.repository.KrNowStockPriceRepository;
+import com.my.stock.redis.repository.OverSeaNowStockPriceRepository;
 import com.my.stock.util.ApiCaller;
 import com.my.stock.util.KisTokenProvider;
 import com.my.stock.util.RestKisToken;
@@ -43,43 +45,56 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 
 	private final StockRepository stockRepository;
 
-	private final KrNowStockPriceRepository krNowStockPriceRepository;
+	private final OverSeaNowStockPriceRepository overSeaNowStockPriceRepository;
 
 	private final KisTokenProvider kisTokenProvider;
 
 
-	public NowOverSeaStockPriceGettingJob(StockRepository stockRepository, KisTokenProvider kisTokenProvider, KrNowStockPriceRepository krNowStockPriceRepository) {
-		super("NowKrStockPriceGettingJob", "0 0/20 8-17 * * ?", null);
+	public NowOverSeaStockPriceGettingJob(StockRepository stockRepository, KisTokenProvider kisTokenProvider, OverSeaNowStockPriceRepository overSeaNowStockPriceRepository) {
+		super("ToNightOverSeaStockPriceGettingJob", "0 0/20 20-23 * * ?", null);
+
+		QuartzJobUtil.getJobDetails().add(buildJobDetail("OverNightOverSeaStockPriceGettingJob", new HashMap<>()));
+		QuartzJobUtil.getTriggers().add(buildJobTrigger("OverNightOverSeaStockPriceGettingJob", "0 0/20 0-8 * * ?", new HashMap<>()));
 		this.stockRepository = stockRepository;
 		this.kisTokenProvider = kisTokenProvider;
-		this.krNowStockPriceRepository = krNowStockPriceRepository;
+		this.overSeaNowStockPriceRepository = overSeaNowStockPriceRepository;
 	}
 
+	// job 1
 	@Bean
-	public Job NowKrStockPriceGettingJob(JobRepository jobRepository, Step nowKrStockPriceGettingStep) {
-
-		return new JobBuilder("NowKrStockPriceGettingJob", jobRepository)
-				.start(nowKrStockPriceGettingStep)
+	public Job ToNightOverSeaStockPriceGettingJob(JobRepository jobRepository, Step nowOverSeaStockPriceGettingStep) {
+		return new JobBuilder("ToNightOverSeaStockPriceGettingJob", jobRepository)
+				.start(nowOverSeaStockPriceGettingStep)
 				.build();
 	}
 
+	// job 2
 	@Bean
-	public Step nowKrStockPriceGettingStep(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
-		return new StepBuilder("nowKrStockPriceGettingStep", jobRepository)
-				.<String, OverSeaNowStockPrice>chunk(1, platformTransactionManager)
+	public Job OverNightOverSeaStockPriceGettingJob(JobRepository jobRepository, Step nowOverSeaStockPriceGettingStep) {
+		return new JobBuilder("OverNightOverSeaStockPriceGettingJob", jobRepository)
+				.start(nowOverSeaStockPriceGettingStep)
+				.build();
+	}
+
+
+	// step
+	@Bean
+	public Step nowOverSeaStockPriceGettingStep(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
+		return new StepBuilder("nowOverSeaStockPriceGettingStep", jobRepository)
+				.<SymbolAndCodeInterface, OverSeaNowStockPriceWrapper>chunk(1, platformTransactionManager)
 				.reader(stockSymbolReader)
 				.processor(nowStockPriceProcessor)
 				.writer(writer)
 				.build();
 	}
 
-	private final ItemReader<String> stockSymbolReader = new ItemReader<>() {
-		List<String> stockSymbols = null;
+	private final ItemReader<SymbolAndCodeInterface> stockSymbolReader = new ItemReader<>() {
+		List<SymbolAndCodeInterface> stockSymbols = null;
 
 		@Override
-		public String read() {
+		public SymbolAndCodeInterface read() {
 			if (stockSymbols == null) {
-				stockSymbols = stockRepository.findSymbolGroupBySymbol("KR");
+				stockSymbols = stockRepository.findSymbolAndCodeNotNationalGroupBySymbol("KR");
 			}
 
 			if (stockSymbols.isEmpty()) {
@@ -89,9 +104,9 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 		}
 	};
 
-	private final ItemProcessor<String, OverSeaNowStockPrice> nowStockPriceProcessor = new ItemProcessor<>() {
+	private final ItemProcessor<SymbolAndCodeInterface, OverSeaNowStockPriceWrapper> nowStockPriceProcessor = new ItemProcessor<>() {
 		@Override
-		public OverSeaNowStockPrice process(String item) throws Exception {
+		public OverSeaNowStockPriceWrapper process(SymbolAndCodeInterface item) throws Exception {
 			RestKisToken kisToken = kisTokenProvider.getRestToken();
 			HttpHeaders headers = new HttpHeaders();
 			headers.add("authorization", kisToken.getToken_type() + " " + kisToken.getAccess_token());
@@ -102,22 +117,23 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 			headers.add("custtype", "P");
 
 			HashMap<String, Object> param = new HashMap<>();
-			param.put("FID_COND_MRKT_DIV_CODE", "J");
-			param.put("FID_INPUT_ISCD", item);
-			OverSeaNowStockPrice response = new ObjectMapper().readValue(ApiCaller.getInstance()
-					.get("https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price", headers, param)
-					, OverSeaNowStockPrice.class);
+			param.put("AUTH", "");
+			param.put("EXCD", item.getCode());
+			param.put("SYMB", item.getSymbol());
+			OverSeaNowStockPriceWrapper response = new ObjectMapper().readValue(ApiCaller.getInstance()
+					.get("https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price-detail", headers, param)
+					, OverSeaNowStockPriceWrapper.class);
 			return response;
 		}
 	};
 
-	private final ItemWriter<OverSeaNowStockPrice> writer = new ItemWriter<>() {
+	private final ItemWriter<OverSeaNowStockPriceWrapper> writer = new ItemWriter<>() {
 		@Override
-		public void write(Chunk<? extends OverSeaNowStockPrice> chunk) {
+		public void write(Chunk<? extends OverSeaNowStockPriceWrapper> chunk) {
 			chunk.forEach(item -> {
-				Optional<KrNowStockPrice> entity = krNowStockPriceRepository.findById(item.getStck_shrn_iscd());
-				entity.ifPresent(krNowStockPriceRepository::delete);
-				krNowStockPriceRepository.save(item);
+				Optional<OverSeaNowStockPrice> entity = overSeaNowStockPriceRepository.findById(item.getOutput().getRsym());
+				entity.ifPresent(overSeaNowStockPriceRepository::delete);
+				overSeaNowStockPriceRepository.save(item.getOutput());
 			});
 		}
 	};

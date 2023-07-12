@@ -31,7 +31,7 @@ public abstract class BaseBatch {
 				.build();
 	}
 
-	private Trigger buildJobTrigger(String jobName, int value, HashMap<String, Object> param) {
+	public Trigger buildJobTrigger(String jobName, int value, HashMap<String, Object> param) {
 		JobDetail jobDetail = buildJobDetail(jobName, param);
 		SimpleScheduleBuilder scheduleBuilder = SimpleScheduleBuilder.simpleSchedule().withIntervalInSeconds(value).repeatForever();
 		return TriggerBuilder

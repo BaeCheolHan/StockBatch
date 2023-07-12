@@ -7,203 +7,98 @@ import org.springframework.data.redis.core.RedisHash;
 
 @Getter
 @Setter
-@RedisHash("KrNowStockPrice")
+@RedisHash("OverSeaNowStockPrice")
 public class OverSeaNowStockPrice {
-	// 주식 단축 종목코드
+	// 실시간조회종목코드
+//	D+시장구분(3자리)+종목코드
+//	예) DNASAAPL : D+NAS(나스닥)+AAPL(애플)
+//[시장구분]
+//	NYS : 뉴욕, NAS : 나스닥, AMS : 아멕스 ,
+//	TSE : 도쿄, HKS : 홍콩,
+//	SHS : 상해, SZS : 심천
+//	HSX : 호치민, HNX : 하노이
 	@Id
-	private String stck_shrn_iscd;
-
-	// 주식 현재가
-	private Double stck_prpr;
-
-	//    종목 상태 구분 코드
-//    00 : 그외
-//    51 : 관리종목
-//    52 : 투자의견
-//    53 : 투자경고
-//    54 : 투자주의
-//    55 : 신용가능
-//    57 : 증거금 100%
-//    58 : 거래정지
-//    59 : 단기과열,
-	private String iscd_stat_cls_code;
-
-	// 증거금 비율
-	private Double marg_rate;
-	// 대표 시장 한글 명
-	private String rprs_mrkt_kor_name;
-
-	// 업종 한글 종목명
-	private String bstp_kor_isnm;
-
-	// 임시 정지 여부
-	private String temp_stop_yn;
-
-	// 시가 범위 연장 여부
-	private String oprc_rang_cont_yn;
-
-	// 종가 범위 연장 여부
-	private String clpr_rang_cont_yn;
-
-	// 신용 가능 여부
-	private String crdt_able_yn;
-
-	// 보증금 비율 구분 코드
-	//	한국투자 증거금비율 (marg_rate 참고)
-	//	40 : 20%, 30%, 40%
-	//	50 : 50%
-	//	60 : 60%
-	private String grmn_rate_cls_code;
-
-	// ELW 발행 여부
-	private String elw_pblc_yn;
-
-	// 전일 대비
-	private Double prdy_vrss;
-
-	//전일 대비 부호
-	//	1 : 상한
-	//	2 : 상승
-	//	3 : 보합
-	//	4 : 하한
-	//	5 : 하락
-	private String prdy_vrss_sign;
-
-	// 전일 대비율
-	private Double prdy_ctrt;
-
-	// 누적 거래 대금
-	private Long acml_tr_pbmn;
-
-	// 누적 거래량
-	private Long acml_vol;
-
-	// 전일 대비 거래량 비율
-	private Double prdy_vrss_vol_rate;
-	// 주식 시가
-	private Double stck_oprc;
-	// 주식 최고가
-	private Double stck_hgpr;
-	// 주식 최저가
-	private Double stck_lwpr;
-	// 주식 상한가
-	private Double stck_mxpr;
-	// 주식 하한가
-	private Double stck_llam;
-	// 주식 기준가
-	private Double stck_sdpr;
-	// 가중 평균 주식 가격
-	private Double wghn_avrg_stck_prc;
-	// HTS 외국인 소진율
-	private Double hts_frgn_ehrt;
-	// 외국인 순매수 수량
-	private Long frgn_ntby_qty;
-	// 프로그램매매 순매수 수량
-	private Long pgtr_ntby_qty;
-	// 피벗 2차 디저항 가격(직원용 데이터)
-	private Long pvt_scnd_dmrs_prc;
-	// 피벗 1차 디저항 가격(직원용 데이터)
-	private Long pvt_frst_dmrs_prc;
-	// 피벗 포인트 값(직원용 데이터)
-	private Long pvt_pont_val;
-	// 피벗 1차 디지지 가격(직원용 데이터)
-	private Long pvt_frst_dmsp_prc;
-	// 피벗 2차 디지지 가격(직원용 데이터)
-	private Long pvt_scnd_dmsp_prc;
-	// 디저항 값(직원용 데이터)
-	private Long dmrs_val;
-	// 디지지 값(직원용 데이터)
-	private Long dmsp_val;
-	// 자본금
-	private Long cpfn;
-	// 제한 폭 가격
-	private Long rstc_wdth_prc;
-	// 주식 액면가
-	private Integer stck_fcam;
-	// 주식 대용가
-	private Integer stck_sspr;
-	// 호가단위
-	private Integer aspr_unit;
-	// HTS 매매 수량 단위 값
-	private Double hts_deal_qty_unit_val;
-	// 상장 주수
-	private Long lstn_stcn;
-	// HTS 시가총액
-	private Long hts_avls;
+	private String rsym;
+	// 소수점자리수
+	private Integer zdiv;
+	//통화
+	private String curr;
+	// 매매단위
+	private Double vnit;
+	// 시가(해당일 최초 거래가격)
+	private Double open;
+	// 고가(해당일 가장 높은 거래가격)
+	private Double high;
+	// 저가(해당일 가장 낮은 거래가격)
+	private Double low;
+	// 현재가
+	private Double last;
+	// 전일종가
+	private Double base;
+	// 전일 거래량
+	private Long pvol;
+	//전일거래대금
+	private Double pamt;
+	// 상한가
+	private Double uplp;
+	// 하한가
+	private Double dnlp;
+	// 52주최고가
+	private Double h52p;
+	// 52주최고일자
+	private String h52d;
+	// 52주최저가
+	private Double l52p;
+	// 52주최저일자
+	private String l52d;
 	// PER
-	private Double per;
+	private Double perx;
 	// PBR
-	private Double pbr;
-	// 결산 월
-	private String stac_month;
-	// 거래량 회전율
-	private Double vol_tnrt;
-	// EPS
-	private Double eps;
-	// BPS
-	private Double bps;
-	// 250일 최고가
-	private Double d250_hgpr;
-	// 250일 최고가 일자
-	private String d250_hgpr_date;
-	// 250일 최고가 대비 현재가 비율
-	private Double d250_hgpr_vrss_prpr_rate;
-	// 250일 최저가
-	private Double d250_lwpr;
-	// 250일 최저가 일자
-	private String d250_lwpr_date;
-	// 250일 최저가 대비 현재가 비율
-	private Double d250_lwpr_vrss_prpr_rate;
-	// 주식 연중 최고가
-	private Double stck_dryy_hgpr;
-	// 연중 최고가 대비 현재가 비율
-	private Double dryy_hgpr_vrss_prpr_rate;
-	// 연중 최고가 일자
-	private String dryy_hgpr_date;
-	// 주식 연중 최저가
-	private Double stck_dryy_lwpr;
-	// 	연중 최저가 대비 현재가 비율
-	private Double dryy_lwpr_vrss_prpr_rate;
-	// 연중 최저가 일자
-	private String dryy_lwpr_date;
-	// 52주일 최고가
-	private Double w52_hgpr;
-	// 52주일 최고가 대비 현재가 대비
-	private Double w52_hgpr_vrss_prpr_ctrt;
-	// 52주일 최고가 일자
-	private String w52_hgpr_date;
-	// 52주일 최저가
-	private Double w52_lwpr;
-	// 52주일 최저가 대비 현재가 대비
-	private Double w52_lwpr_vrss_prpr_ctrt;
-	// 52주일 최저가 일자
-	private String w52_lwpr_date;
-	// 전체 융자 잔고 비율
-	private Double whol_loan_rmnd_rate;
-	// 공매도가능여부
-	private String ssts_yn;
-	// 액면가 통화명
-	private String fcam_cnnm;
-	// 자본금 통화명(외국주권은 억으로 떨어지며, 그 외에는 만으로 표시됨)
-	private String cpfn_cnnm;
-	// 외국인 보유 수량
-	private Long frgn_hldn_qty;
-	// VI적용구분코드
-	private String vi_cls_code;
-	// 시간외단일가VI적용구분코드
-	private String ovtm_vi_cls_code;
-	// 최종 공매도 체결 수량
-	private Long last_ssts_cntg_qty;
-	// 투자유의여부
-	private String invt_caful_yn;
-	// 시장경고코드
-	//		00 : 없음
-	//		01 : 투자주의
-	//		02 : 투자경고
-	//		03 : 투자위험
-	private String mrkt_warn_cls_code;
-	// 단기과열여부
-	private String short_over_yn;
-	// ??
-	private String sltr_yn;
+	private Double pbrx;
+	//EPS
+	private Double epsx;
+	//BPS
+	private Double bpsx;
+
+	// 상장주수
+	private Long shar;
+	// 자본금
+	private Long mcap;
+	// 시가총액
+	private Long tomv;
+	// 원환산당일가격
+	private Double t_xprc;
+	//원환산당일대비
+	private Double t_xdif;
+	// 원환산당일등락
+	private Double t_xrat;
+	// 원환산전일가격
+	private Double p_xprc;
+	// 원환산전일대비
+	private Double p_xdif;
+	// 원환산전일등락
+	private Double p_xrat;
+	// 당일환율
+	private Double t_rate;
+	// 전일환율
+	private Double p_rate;
+	// 원환산당일기호
+	private String t_xsgn;
+	// 원환산전일기호
+	private String p_xsng;
+	// 거래가능여부
+	private String e_ordyn;
+	// 호가단위
+	private Double e_hogau;
+	// 업종(섹터)
+	private String e_icod;
+	// 액면가
+	private Double e_parp;
+	// 거래량
+	private Double tvol;
+	// 거래대금
+	private Double tamt;
+	// ETP 분류명
+	private String etyp_nm;
+
 }
