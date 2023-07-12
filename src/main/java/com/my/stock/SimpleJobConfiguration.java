@@ -16,6 +16,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.util.Objects;
+
 @Slf4j
 @Configuration
 public class SimpleJobConfiguration extends BaseBatch {
@@ -37,7 +39,7 @@ public class SimpleJobConfiguration extends BaseBatch {
 
 		@Override
 		public void beforeJob(JobExecution jobExecution) {
-			System.out.println(" + " + jobExecution.getJobParameters().getString("test"));
+			System.out.println(Objects.requireNonNull(jobExecution.getJobParameters().getParameter("test")).getValue());
 		}
 
 		@Override

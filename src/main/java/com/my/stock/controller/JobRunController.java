@@ -23,7 +23,7 @@ public class JobRunController {
 	public ResponseEntity<BaseResponse> runJob(@PathVariable String jobName, @RequestParam Map<String, Object> parameters) {
 		JobParametersBuilder jpb = new JobParametersBuilder();
 		jpb.addString("JobID", String.valueOf(System.currentTimeMillis()));
-		parameters.forEach((key, value) -> jpb.addString(key, value.toString()));
+		parameters.forEach((key, value) -> jpb.addJobParameter(key, new JobParameter<>(value.toString(), String.class)));
 
 		jobRunService.runjob(jobName, jpb.toJobParameters());
 		return ResponseEntity.status(HttpStatus.OK)
