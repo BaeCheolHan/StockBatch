@@ -29,6 +29,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
     compileOnly 'org.projectlombok:lombok'
     implementation group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '3.1.4'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
