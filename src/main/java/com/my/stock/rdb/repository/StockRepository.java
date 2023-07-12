@@ -4,12 +4,13 @@ import com.my.stock.rdb.entity.Stock;
 import com.my.stock.rdb.repository.custom.StockRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
 public interface StockRepository extends JpaRepository<Stock, Long>, StockRepositoryCustom {
-	@Query(value = "SELECT symbol FROM stock GROUP BY symbol", nativeQuery = true)
-	List<String> findSymbolGroupBySymbol();
+	@Query(value = "SELECT stock.symbol FROM stock INNER JOIN stocks on stock.symbol = stocks.symbol WHERE stocks.national=:national GROUP BY stock.symbol", nativeQuery = true)
+	List<String> findSymbolGroupBySymbol(@Param("national")String national);
 }
