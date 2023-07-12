@@ -3,7 +3,6 @@ package com.my.stock;
 
 import com.my.stock.base.BaseBatch;
 import lombok.extern.slf4j.Slf4j;
-import org.quartz.JobListener;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
@@ -39,7 +38,6 @@ public class SimpleJobConfiguration extends BaseBatch {
 
 		@Override
 		public void beforeJob(JobExecution jobExecution) {
-			System.out.println(Objects.requireNonNull(jobExecution.getJobParameters().getParameter("test")).getValue());
 		}
 
 		@Override
