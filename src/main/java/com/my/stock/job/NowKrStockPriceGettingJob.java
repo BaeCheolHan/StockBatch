@@ -48,7 +48,7 @@ public class NowKrStockPriceGettingJob extends BaseBatch {
 
 
 	public NowKrStockPriceGettingJob(StockRepository stockRepository, KisTokenProvider kisTokenProvider, KrNowStockPriceRepository krNowStockPriceRepository) {
-		super("NowKrStockPriceGettingJob", "0 0/20 8-17 * * ?", null);
+		super("NowKrStockPriceGettingJob", "0 0/10 8-17 * * ?", null);
 		this.stockRepository = stockRepository;
 		this.kisTokenProvider = kisTokenProvider;
 		this.krNowStockPriceRepository = krNowStockPriceRepository;
