@@ -95,12 +95,14 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 		public SymbolAndCodeInterface read() {
 			if (stockSymbols == null) {
 				stockSymbols = stockRepository.findSymbolAndCodeNotNationalGroupBySymbol("KR");
+				log.info("oaversea stock count is {}", stockSymbols.size());
 			}
 
 			if (stockSymbols.isEmpty()) {
 				stockSymbols = null;
 				return null;
 			}
+			log.info("target oversea symbol is {}", stockSymbols.get(0));
 			return stockSymbols.remove(0);
 		}
 	};
@@ -124,7 +126,6 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 			OverSeaNowStockPriceWrapper response = new ObjectMapper().readValue(ApiCaller.getInstance()
 					.get("https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price-detail", headers, param)
 					, OverSeaNowStockPriceWrapper.class);
-			log.info("oversea stock detail info is : {}", response.toString());
 			return response;
 		}
 	};
