@@ -98,6 +98,7 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 			}
 
 			if (stockSymbols.isEmpty()) {
+				stockSymbols = null;
 				return null;
 			}
 			return stockSymbols.remove(0);
@@ -123,7 +124,7 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 			OverSeaNowStockPriceWrapper response = new ObjectMapper().readValue(ApiCaller.getInstance()
 					.get("https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price-detail", headers, param)
 					, OverSeaNowStockPriceWrapper.class);
-			log.info("oversea stock detail info is : {}", response);
+			log.info("oversea stock detail info is : {}", response.toString());
 			return response;
 		}
 	};
