@@ -105,6 +105,7 @@ public class NowKrStockPriceGettingJob extends BaseBatch {
 			KrNowStockPriceWrapper response = new ObjectMapper().readValue(ApiCaller.getInstance()
 					.get("https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price", headers, param)
 					, KrNowStockPriceWrapper.class);
+			log.info("korea stock detail info is : {}", response);
 			return response;
 		}
 	};
