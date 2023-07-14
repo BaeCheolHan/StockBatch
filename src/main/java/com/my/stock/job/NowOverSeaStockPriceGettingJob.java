@@ -54,7 +54,7 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 		super("ToNightOverSeaStockPriceGettingJob", "0 0/10 20-23 * * ?", null);
 
 		QuartzJobUtil.getJobDetails().add(buildJobDetail("OverNightOverSeaStockPriceGettingJob", new HashMap<>()));
-		QuartzJobUtil.getTriggers().add(buildJobTrigger("OverNightOverSeaStockPriceGettingJob", "0 0/10 0-8 * * ?", new HashMap<>()));
+		QuartzJobUtil.getTriggers().add(buildJobTrigger("OverNightOverSeaStockPriceGettingJob", "0 0/10 0-9 * * ?", new HashMap<>()));
 		this.stockRepository = stockRepository;
 		this.kisTokenProvider = kisTokenProvider;
 		this.overSeaNowStockPriceRepository = overSeaNowStockPriceRepository;
