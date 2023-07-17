@@ -4,6 +4,8 @@ import com.my.stock.base.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @EqualsAndHashCode
 @Builder
 @Entity
@@ -18,7 +20,7 @@ public class DepositWithdrawalHistory extends BaseTimeEntity {
     private Long id;
 
     @Column(nullable = false)
-    private double amount;
+    private BigDecimal amount;
 
     private String memo;
 
