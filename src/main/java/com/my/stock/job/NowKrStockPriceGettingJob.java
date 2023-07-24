@@ -1,5 +1,6 @@
 package com.my.stock.job;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.my.stock.base.BaseBatch;
 import com.my.stock.dto.KrNowStockPriceWrapper;
@@ -76,7 +77,7 @@ public class NowKrStockPriceGettingJob extends BaseBatch {
 		List<String> stockSymbols = null;
 
 		@Override
-		public String read() {
+		public String read() throws InterruptedException {
 			if (stockSymbols == null) {
 				stockSymbols = stockRepository.findSymbolByNationalGroupBySymbol("KR");
 			}
@@ -85,6 +86,7 @@ public class NowKrStockPriceGettingJob extends BaseBatch {
 				stockSymbols = null;
 				return null;
 			}
+			Thread.sleep(300);
 			return stockSymbols.remove(0);
 		}
 	};
@@ -103,7 +105,7 @@ public class NowKrStockPriceGettingJob extends BaseBatch {
 			HashMap<String, Object> param = new HashMap<>();
 			param.put("FID_COND_MRKT_DIV_CODE", "J");
 			param.put("FID_INPUT_ISCD", item);
-			KrNowStockPriceWrapper response = new ObjectMapper().readValue(ApiCaller.getInstance()
+			KrNowStockPriceWrapper response = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(ApiCaller.getInstance()
 					.get("https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price", headers, param)
 					, KrNowStockPriceWrapper.class);
 			log.info("korea stock detail info is : {}", response.toString());
