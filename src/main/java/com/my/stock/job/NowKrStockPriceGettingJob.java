@@ -97,7 +97,7 @@ public class NowKrStockPriceGettingJob extends BaseBatch {
 			RestKisToken kisToken = kisTokenProvider.getRestToken();
 			HttpHeaders headers = new HttpHeaders();
 			headers.add("authorization", kisToken.getToken_type() + " " + kisToken.getAccess_token());
-			headers.add("content-type", 	"application/json; charset=utf-8");
+			headers.add("content-type", "application/json; charset=utf-8");
 			headers.add("appkey", appKey);
 			headers.add("appsecret", appSecret);
 			headers.add("tr_id", "FHKST01010100");
@@ -105,11 +105,9 @@ public class NowKrStockPriceGettingJob extends BaseBatch {
 			HashMap<String, Object> param = new HashMap<>();
 			param.put("FID_COND_MRKT_DIV_CODE", "J");
 			param.put("FID_INPUT_ISCD", item);
-			KrNowStockPriceWrapper response = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(ApiCaller.getInstance()
-					.get("https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price", headers, param)
+			return new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(ApiCaller.getInstance()
+							.get("https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price", headers, param)
 					, KrNowStockPriceWrapper.class);
-			log.info("korea stock detail info is : {}", response.toString());
-			return response;
 		}
 	};
 

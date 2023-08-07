@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.my.stock.base.BaseBatch;
 import com.my.stock.config.QuartzJobUtil;
 import com.my.stock.dto.OverSeaNowStockPriceWrapper;
-import com.my.stock.dto.SymbolAndCode;
 import com.my.stock.dto.SymbolAndCodeInterface;
 import com.my.stock.rdb.repository.StockRepository;
 import com.my.stock.redis.entity.OverSeaNowStockPrice;
@@ -96,14 +95,12 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 		public SymbolAndCodeInterface read() throws InterruptedException {
 			if (stockSymbols == null) {
 				stockSymbols = stockRepository.findSymbolAndCodeNotNationalGroupBySymbol("KR");
-				log.info("oaversea stock count is {}", stockSymbols.size());
 			}
 
 			if (stockSymbols.isEmpty()) {
 				stockSymbols = null;
 				return null;
 			}
-			log.info("target oversea symbol is {}", stockSymbols.get(0));
 			Thread.sleep(300);
 			return stockSymbols.remove(0);
 		}
@@ -115,7 +112,7 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 			RestKisToken kisToken = kisTokenProvider.getRestToken();
 			HttpHeaders headers = new HttpHeaders();
 			headers.add("authorization", kisToken.getToken_type() + " " + kisToken.getAccess_token());
-			headers.add("content-type", 	"application/json; charset=utf-8");
+			headers.add("content-type", "application/json; charset=utf-8");
 			headers.add("appkey", appKey);
 			headers.add("appsecret", appSecret);
 			headers.add("tr_id", "HHDFS76200200");
@@ -125,9 +122,10 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 			param.put("AUTH", "");
 			param.put("EXCD", item.getCode());
 			param.put("SYMB", item.getSymbol());
-			OverSeaNowStockPriceWrapper response = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(ApiCaller.getInstance()
-					.get("https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price-detail", headers, param)
-					, OverSeaNowStockPriceWrapper.class);
+			OverSeaNowStockPriceWrapper response = new ObjectMapper()
+					.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+					.readValue(ApiCaller.getInstance().get("https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price-detail", headers, param)
+							, OverSeaNowStockPriceWrapper.class);
 			return response;
 		}
 	};
