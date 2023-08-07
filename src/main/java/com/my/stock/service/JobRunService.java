@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 public class JobRunService {
 	public void runjob(String jobName, JobParameters jobParameter) {
 		try {
-			QuartzJobUtil.getJobLocator().getJob(jobName);
 			Job job = QuartzJobUtil.getJobLocator().getJob(jobName);
 			QuartzJobUtil.getJobLauncher().run(job, jobParameter);
 		} catch (Exception e) {

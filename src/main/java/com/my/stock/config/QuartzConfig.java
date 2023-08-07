@@ -1,7 +1,8 @@
 package com.my.stock.config;
 
 import lombok.RequiredArgsConstructor;
-import org.quartz.*;
+import org.quartz.JobDetail;
+import org.quartz.Trigger;
 import org.springframework.batch.core.configuration.JobLocator;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
@@ -17,9 +18,6 @@ import org.springframework.transaction.TransactionManager;
 
 import javax.sql.DataSource;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 @Configuration
