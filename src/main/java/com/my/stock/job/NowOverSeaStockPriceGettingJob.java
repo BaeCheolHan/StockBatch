@@ -122,11 +122,10 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 			param.put("AUTH", "");
 			param.put("EXCD", item.getCode());
 			param.put("SYMB", item.getSymbol());
-			OverSeaNowStockPriceWrapper response = new ObjectMapper()
+			return new ObjectMapper()
 					.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 					.readValue(ApiCaller.getInstance().get("https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price-detail", headers, param)
 							, OverSeaNowStockPriceWrapper.class);
-			return response;
 		}
 	};
 
