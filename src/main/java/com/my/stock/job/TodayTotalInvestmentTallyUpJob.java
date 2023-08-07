@@ -2,7 +2,10 @@ package com.my.stock.job;
 
 import com.my.stock.base.BaseBatch;
 import com.my.stock.rdb.entity.*;
-import com.my.stock.rdb.repository.*;
+import com.my.stock.rdb.repository.BankAccountRepository;
+import com.my.stock.rdb.repository.DailyTotalInvestmentAmountRepository;
+import com.my.stock.rdb.repository.ExchangeRateRepository;
+import com.my.stock.rdb.repository.StocksRepository;
 import com.my.stock.redis.entity.KrNowStockPrice;
 import com.my.stock.redis.entity.OverSeaNowStockPrice;
 import com.my.stock.redis.repository.KrNowStockPriceRepository;
@@ -139,15 +142,8 @@ public class TodayTotalInvestmentTallyUpJob extends BaseBatch {
 		};
 	}
 
-
-
 	private ItemWriter<DailyTotalInvestmentAmount> writer() {
-		return list -> {
-			for (DailyTotalInvestmentAmount amount : list) {
-				dailyTotalInvestmentAmountRepository.save(amount);
-			}
-		};
+		return list -> list.forEach(dailyTotalInvestmentAmountRepository::save);
 	}
-
 
 }
