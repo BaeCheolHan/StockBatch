@@ -13,6 +13,8 @@ import java.math.BigDecimal;
 public class KrNowStockPrice {
 	// 주식 단축 종목코드
 	@Id
+	private String symbol;
+
 	private String stck_shrn_iscd;
 
 	// 주식 현재가

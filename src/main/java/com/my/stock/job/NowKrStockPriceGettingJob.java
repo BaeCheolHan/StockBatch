@@ -105,9 +105,13 @@ public class NowKrStockPriceGettingJob extends BaseBatch {
 			HashMap<String, Object> param = new HashMap<>();
 			param.put("FID_COND_MRKT_DIV_CODE", "J");
 			param.put("FID_INPUT_ISCD", item);
-			return new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(ApiCaller.getInstance()
+			KrNowStockPriceWrapper wrapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(ApiCaller.getInstance()
 							.get("https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price", headers, param)
 					, KrNowStockPriceWrapper.class);
+
+
+			wrapper.getOutput().setSymbol(item);
+			return wrapper;
 		}
 	};
 
@@ -115,7 +119,7 @@ public class NowKrStockPriceGettingJob extends BaseBatch {
 		@Override
 		public void write(Chunk<? extends KrNowStockPriceWrapper> chunk) {
 			chunk.forEach(item -> {
-				Optional<KrNowStockPrice> entity = krNowStockPriceRepository.findById(item.getOutput().getStck_shrn_iscd());
+				Optional<KrNowStockPrice> entity = krNowStockPriceRepository.findById(item.getOutput().getSymbol());
 				entity.ifPresent(krNowStockPriceRepository::delete);
 				krNowStockPriceRepository.save(item.getOutput());
 			});

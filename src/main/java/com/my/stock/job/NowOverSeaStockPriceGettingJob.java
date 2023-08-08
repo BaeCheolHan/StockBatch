@@ -122,10 +122,13 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 			param.put("AUTH", "");
 			param.put("EXCD", item.getCode());
 			param.put("SYMB", item.getSymbol());
-			return new ObjectMapper()
+			OverSeaNowStockPriceWrapper wrapper = new ObjectMapper()
 					.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 					.readValue(ApiCaller.getInstance().get("https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price-detail", headers, param)
 							, OverSeaNowStockPriceWrapper.class);
+
+			wrapper.getOutput().setSymbol(item.getSymbol());
+			return wrapper;
 		}
 	};
 
@@ -133,7 +136,7 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 		@Override
 		public void write(Chunk<? extends OverSeaNowStockPriceWrapper> chunk) {
 			chunk.forEach(item -> {
-				Optional<OverSeaNowStockPrice> entity = overSeaNowStockPriceRepository.findById(item.getOutput().getRsym());
+				Optional<OverSeaNowStockPrice> entity = overSeaNowStockPriceRepository.findById(item.getOutput().getSymbol());
 				entity.ifPresent(overSeaNowStockPriceRepository::delete);
 				overSeaNowStockPriceRepository.save(item.getOutput());
 			});
