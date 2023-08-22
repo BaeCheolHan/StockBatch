@@ -1,6 +1,8 @@
 package com.my.stock.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.my.stock.dto.kis.RestKisToken;
+import com.my.stock.dto.kis.SocketKisToken;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 

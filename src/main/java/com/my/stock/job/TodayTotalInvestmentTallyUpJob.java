@@ -1,9 +1,11 @@
 package com.my.stock.job;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.my.stock.api.KisApi;
 import com.my.stock.base.BaseBatch;
 import com.my.stock.dto.KrNowStockPriceWrapper;
 import com.my.stock.dto.OverSeaNowStockPriceWrapper;
+import com.my.stock.dto.kis.request.KrStockPriceRequest;
+import com.my.stock.dto.kis.request.OverSeaStockPriceRequest;
 import com.my.stock.rdb.entity.*;
 import com.my.stock.rdb.repository.BankAccountRepository;
 import com.my.stock.rdb.repository.DailyTotalInvestmentAmountRepository;
@@ -13,7 +15,6 @@ import com.my.stock.redis.entity.KrNowStockPrice;
 import com.my.stock.redis.entity.OverSeaNowStockPrice;
 import com.my.stock.redis.repository.KrNowStockPriceRepository;
 import com.my.stock.redis.repository.OverSeaNowStockPriceRepository;
-import com.my.stock.util.ApiCaller;
 import com.my.stock.util.KisApiUtils;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -59,6 +59,8 @@ public class TodayTotalInvestmentTallyUpJob extends BaseBatch {
 
 	private final KisApiUtils kisApiUtils;
 
+	private final KisApi kisApi;
+
 
 	public TodayTotalInvestmentTallyUpJob(
 			EntityManagerFactory entityManagerFactory
@@ -69,6 +71,7 @@ public class TodayTotalInvestmentTallyUpJob extends BaseBatch {
 			, ExchangeRateRepository exchangeRateRepository
 			, DailyTotalInvestmentAmountRepository dailyTotalInvestmentAmountRepository
 			, KisApiUtils kisApiUtils
+			, KisApi kisApi
 	) {
 		super("TodayTotalInvestmentTallyUpJob", "0 1 0 * * ?", null);
 		this.entityManagerFactory = entityManagerFactory;
@@ -79,7 +82,7 @@ public class TodayTotalInvestmentTallyUpJob extends BaseBatch {
 		this.exchangeRateRepository = exchangeRateRepository;
 		this.dailyTotalInvestmentAmountRepository = dailyTotalInvestmentAmountRepository;
 		this.kisApiUtils = kisApiUtils;
-
+		this.kisApi = kisApi;
 	}
 
 	@Bean
@@ -179,19 +182,17 @@ public class TodayTotalInvestmentTallyUpJob extends BaseBatch {
 
 
 	private void saveNowPrice(String symbol) throws Exception {
-		Stocks stocks = stocksRepository.findBySymbol(symbol).orElseThrow(() ->new RuntimeException("NOT FOUND SYMBOL"));
+		Stocks stocks = stocksRepository.findBySymbol(symbol).orElseThrow(() -> new RuntimeException("NOT FOUND SYMBOL"));
 		HttpHeaders headers = kisApiUtils.getDefaultApiHeader();
 		if (!stocks.getNational().equals("KR")) {
 			headers.add("tr_id", "HHDFS76200200");
 			headers.add("custtype", "P");
 
-			HashMap<String, Object> param = new HashMap<>();
-			param.put("AUTH", "");
-			param.put("EXCD", stocks.getCode());
-			param.put("SYMB", stocks.getSymbol());
-			OverSeaNowStockPriceWrapper response = new ObjectMapper().readValue(ApiCaller.getInstance()
-							.get("https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price-detail", headers, param)
-					, OverSeaNowStockPriceWrapper.class);
+			OverSeaNowStockPriceWrapper response = kisApi.getOverSeaStockPrice(headers, OverSeaStockPriceRequest.builder()
+					.AUTH("")
+					.EXCD(stocks.getCode())
+					.SYMB(stocks.getSymbol())
+					.build());
 
 			response.getOutput().setSymbol(symbol);
 
@@ -201,12 +202,13 @@ public class TodayTotalInvestmentTallyUpJob extends BaseBatch {
 		} else {
 			headers.add("tr_id", "FHKST01010100");
 
-			HashMap<String, Object> param = new HashMap<>();
-			param.put("FID_COND_MRKT_DIV_CODE", "J");
-			param.put("FID_INPUT_ISCD", stocks.getSymbol());
-			KrNowStockPriceWrapper response = new ObjectMapper().readValue(ApiCaller.getInstance()
-							.get("https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price", headers, param)
-					, KrNowStockPriceWrapper.class);
+			KrStockPriceRequest request = KrStockPriceRequest.builder()
+					.fid_cond_mrkt_div_code("J")
+					.fid_input_iscd(symbol)
+					.build();
+
+			KrNowStockPriceWrapper response = kisApi.getKorStockPrice(headers, request);
+
 			response.getOutput().setSymbol(symbol);
 			Optional<KrNowStockPrice> entity = krNowStockPriceRepository.findById(response.getOutput().getSymbol());
 			entity.ifPresent(krNowStockPriceRepository::delete);

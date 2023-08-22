@@ -1,15 +1,13 @@
 package com.my.stock.job;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.my.stock.api.KisApi;
 import com.my.stock.base.BaseBatch;
 import com.my.stock.dto.KrNowStockPriceWrapper;
+import com.my.stock.dto.kis.request.KrStockPriceRequest;
 import com.my.stock.rdb.repository.StockRepository;
 import com.my.stock.redis.entity.KrNowStockPrice;
 import com.my.stock.redis.repository.KrNowStockPriceRepository;
-import com.my.stock.util.ApiCaller;
-import com.my.stock.util.KisTokenProvider;
-import com.my.stock.util.RestKisToken;
+import com.my.stock.util.KisApiUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -20,13 +18,11 @@ import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,23 +31,20 @@ import java.util.Optional;
 @Configuration
 public class NowKrStockPriceGettingJob extends BaseBatch {
 
-	@Value("${api.kis.appKey}")
-	private String appKey;
-
-	@Value("${api.kis.app-secret}")
-	private String appSecret;
-
 	private final StockRepository stockRepository;
 
 	private final KrNowStockPriceRepository krNowStockPriceRepository;
 
-	private final KisTokenProvider kisTokenProvider;
+	private final KisApi kisApi;
+
+	private final KisApiUtils kisApiUtils;
 
 
-	public NowKrStockPriceGettingJob(StockRepository stockRepository, KisTokenProvider kisTokenProvider, KrNowStockPriceRepository krNowStockPriceRepository) {
+	public NowKrStockPriceGettingJob(StockRepository stockRepository, KisApiUtils kisApiUtils, KrNowStockPriceRepository krNowStockPriceRepository, KisApi kisApi) {
 		super("NowKrStockPriceGettingJob", "0 0/10 8-17 * * ?", null);
 		this.stockRepository = stockRepository;
-		this.kisTokenProvider = kisTokenProvider;
+		this.kisApiUtils = kisApiUtils;
+		this.kisApi = kisApi;
 		this.krNowStockPriceRepository = krNowStockPriceRepository;
 	}
 
@@ -93,25 +86,19 @@ public class NowKrStockPriceGettingJob extends BaseBatch {
 
 	private final ItemProcessor<String, KrNowStockPriceWrapper> nowStockPriceProcessor = new ItemProcessor<>() {
 		@Override
-		public KrNowStockPriceWrapper process(String item) throws Exception {
-			RestKisToken kisToken = kisTokenProvider.getRestToken();
-			HttpHeaders headers = new HttpHeaders();
-			headers.add("authorization", kisToken.getToken_type() + " " + kisToken.getAccess_token());
-			headers.add("content-type", "application/json; charset=utf-8");
-			headers.add("appkey", appKey);
-			headers.add("appsecret", appSecret);
+		public KrNowStockPriceWrapper process(String symbol) throws Exception {
+			HttpHeaders headers = kisApiUtils.getDefaultApiHeader();
 			headers.add("tr_id", "FHKST01010100");
 
-			HashMap<String, Object> param = new HashMap<>();
-			param.put("FID_COND_MRKT_DIV_CODE", "J");
-			param.put("FID_INPUT_ISCD", item);
-			KrNowStockPriceWrapper wrapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(ApiCaller.getInstance()
-							.get("https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price", headers, param)
-					, KrNowStockPriceWrapper.class);
+			KrStockPriceRequest request = KrStockPriceRequest.builder()
+					.fid_cond_mrkt_div_code("J")
+					.fid_input_iscd(symbol)
+					.build();
 
+			KrNowStockPriceWrapper response = kisApi.getKorStockPrice(headers, request);
 
-			wrapper.getOutput().setSymbol(item);
-			return wrapper;
+			response.getOutput().setSymbol(symbol);
+			return response;
 		}
 	};
 

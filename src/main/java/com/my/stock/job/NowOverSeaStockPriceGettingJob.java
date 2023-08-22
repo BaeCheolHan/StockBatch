@@ -1,17 +1,15 @@
 package com.my.stock.job;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.my.stock.api.KisApi;
 import com.my.stock.base.BaseBatch;
 import com.my.stock.config.QuartzJobUtil;
 import com.my.stock.dto.OverSeaNowStockPriceWrapper;
 import com.my.stock.dto.SymbolAndCodeInterface;
+import com.my.stock.dto.kis.request.OverSeaStockPriceRequest;
 import com.my.stock.rdb.repository.StockRepository;
 import com.my.stock.redis.entity.OverSeaNowStockPrice;
 import com.my.stock.redis.repository.OverSeaNowStockPriceRepository;
-import com.my.stock.util.ApiCaller;
-import com.my.stock.util.KisTokenProvider;
-import com.my.stock.util.RestKisToken;
+import com.my.stock.util.KisApiUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -22,7 +20,6 @@ import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -37,27 +34,24 @@ import java.util.Optional;
 @Configuration
 public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 
-	@Value("${api.kis.appKey}")
-	private String appKey;
-
-	@Value("${api.kis.app-secret}")
-	private String appSecret;
-
 	private final StockRepository stockRepository;
 
 	private final OverSeaNowStockPriceRepository overSeaNowStockPriceRepository;
 
-	private final KisTokenProvider kisTokenProvider;
+	private final KisApi kisApi;
 
+	private final KisApiUtils kisApiUtils;
 
-	public NowOverSeaStockPriceGettingJob(StockRepository stockRepository, KisTokenProvider kisTokenProvider, OverSeaNowStockPriceRepository overSeaNowStockPriceRepository) {
+	public NowOverSeaStockPriceGettingJob(StockRepository stockRepository, KisApiUtils kisApiUtils
+			, OverSeaNowStockPriceRepository overSeaNowStockPriceRepository, KisApi kisApi) {
 		super("ToNightOverSeaStockPriceGettingJob", "0 0/10 20-23 * * ?", null);
 
 		QuartzJobUtil.getJobDetails().add(buildJobDetail("OverNightOverSeaStockPriceGettingJob", new HashMap<>()));
 		QuartzJobUtil.getTriggers().add(buildJobTrigger("OverNightOverSeaStockPriceGettingJob", "0 0/10 0-9 * * ?", new HashMap<>()));
 		this.stockRepository = stockRepository;
-		this.kisTokenProvider = kisTokenProvider;
+		this.kisApiUtils = kisApiUtils;
 		this.overSeaNowStockPriceRepository = overSeaNowStockPriceRepository;
+		this.kisApi = kisApi;
 	}
 
 	// job 1
@@ -109,26 +103,19 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 	private final ItemProcessor<SymbolAndCodeInterface, OverSeaNowStockPriceWrapper> nowStockPriceProcessor = new ItemProcessor<>() {
 		@Override
 		public OverSeaNowStockPriceWrapper process(SymbolAndCodeInterface item) throws Exception {
-			RestKisToken kisToken = kisTokenProvider.getRestToken();
-			HttpHeaders headers = new HttpHeaders();
-			headers.add("authorization", kisToken.getToken_type() + " " + kisToken.getAccess_token());
-			headers.add("content-type", "application/json; charset=utf-8");
-			headers.add("appkey", appKey);
-			headers.add("appsecret", appSecret);
+
+			HttpHeaders headers = kisApiUtils.getDefaultApiHeader();
 			headers.add("tr_id", "HHDFS76200200");
 			headers.add("custtype", "P");
 
-			HashMap<String, Object> param = new HashMap<>();
-			param.put("AUTH", "");
-			param.put("EXCD", item.getCode());
-			param.put("SYMB", item.getSymbol());
-			OverSeaNowStockPriceWrapper wrapper = new ObjectMapper()
-					.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-					.readValue(ApiCaller.getInstance().get("https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price-detail", headers, param)
-							, OverSeaNowStockPriceWrapper.class);
+			OverSeaNowStockPriceWrapper response = kisApi.getOverSeaStockPrice(headers, OverSeaStockPriceRequest.builder()
+					.AUTH("")
+					.EXCD(item.getCode())
+					.SYMB(item.getSymbol())
+					.build());
 
-			wrapper.getOutput().setSymbol(item.getSymbol());
-			return wrapper;
+			response.getOutput().setSymbol(item.getSymbol());
+			return response;
 		}
 	};
 

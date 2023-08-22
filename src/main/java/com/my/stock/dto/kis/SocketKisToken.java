@@ -1,4 +1,4 @@
-package com.my.stock.util;
+package com.my.stock.dto.kis;
 
 import lombok.Getter;
 import lombok.Setter;
