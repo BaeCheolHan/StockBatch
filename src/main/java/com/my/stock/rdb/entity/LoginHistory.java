@@ -1,13 +1,13 @@
 package com.my.stock.rdb.entity;
 
-import com.my.stock.base.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 @Builder
 @Entity
 @Table
@@ -15,7 +15,8 @@ import java.time.LocalDate;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class DailyTotalInvestmentAmount extends BaseTimeEntity {
+@EntityListeners(AuditingEntityListener.class)
+public class LoginHistory {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -24,7 +25,6 @@ public class DailyTotalInvestmentAmount extends BaseTimeEntity {
 	@JoinColumn(foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private Member member;
 
-	private LocalDate date;
-	private BigDecimal totalInvestmentAmount;
-	private BigDecimal evaluationAmount;
+	@CreatedDate
+	private LocalDateTime loginAt;
 }

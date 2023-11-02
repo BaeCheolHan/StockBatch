@@ -1,13 +1,9 @@
 package com.my.stock.rdb.entity;
 
-import com.my.stock.base.entity.BaseTimeEntity;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-
-@EqualsAndHashCode
 @Builder
 @Entity
 @Table
@@ -15,16 +11,16 @@ import java.time.LocalDate;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class DailyTotalInvestmentAmount extends BaseTimeEntity {
+public class PersonalSetting {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@JsonBackReference
+	@OneToOne(fetch = FetchType.LAZY)
 	@JoinColumn(foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private Member member;
 
-	private LocalDate date;
-	private BigDecimal totalInvestmentAmount;
-	private BigDecimal evaluationAmount;
+	private Long defaultBankAccountId;
+
 }

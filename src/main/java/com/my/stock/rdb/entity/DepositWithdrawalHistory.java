@@ -1,5 +1,6 @@
 package com.my.stock.rdb.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.my.stock.base.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,7 +25,9 @@ public class DepositWithdrawalHistory extends BaseTimeEntity {
 
     private String memo;
 
-    @ManyToOne
+    @JsonBackReference
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private BankAccount bankAccount;
 
 }

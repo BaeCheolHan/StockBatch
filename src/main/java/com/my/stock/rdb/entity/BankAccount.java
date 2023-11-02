@@ -1,5 +1,7 @@
 package com.my.stock.rdb.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.my.stock.base.entity.BaseTimeEntity;
 import com.my.stock.constants.Bank;
 import jakarta.persistence.*;
@@ -7,7 +9,7 @@ import lombok.*;
 
 import java.util.List;
 
-@EqualsAndHashCode
+
 @Builder
 @Entity
 @Table
@@ -28,12 +30,19 @@ public class BankAccount extends BaseTimeEntity {
 	@Enumerated(EnumType.STRING)
 	private Bank bank;
 
-	@ManyToOne
+	@JsonBackReference
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private Member member;
 
-	@OneToMany(mappedBy = "bankAccount", fetch=FetchType.LAZY)
+	@JsonManagedReference
+	@OneToMany(mappedBy = "bankAccount", fetch=FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<Stock> stocks;
 
-	@OneToMany(mappedBy = "bankAccount", fetch=FetchType.LAZY)
+	@JsonManagedReference
+	@OneToMany(mappedBy = "bankAccount", fetch=FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<DepositWithdrawalHistory> depositWithdrawalHistories;
+
+	@OneToOne(mappedBy = "bankAccount", orphanRemoval = true, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	private PersonalBankAccountSetting personalBankAccountSetting;
 }
