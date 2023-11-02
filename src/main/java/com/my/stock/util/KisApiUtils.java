@@ -1,6 +1,6 @@
 package com.my.stock.util;
 
-import com.my.stock.dto.kis.RestKisToken;
+import com.my.stock.redis.entity.RestKisToken;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
