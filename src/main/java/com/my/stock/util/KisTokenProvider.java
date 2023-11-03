@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -28,8 +29,8 @@ public class KisTokenProvider {
 
 		List<RestKisToken> list = (List<RestKisToken>) restKisTokenRepository.findAll();
 
-		boolean nullsOnly = list.stream().noneMatch(Objects::nonNull);
-		if (!nullsOnly) {
+		list= list.stream().filter(Objects::nonNull).collect(Collectors.toList());
+		if (!list.isEmpty()) {
 			return list.get(0);
 		} else {
 			HashMap<String, Object> param = new HashMap<>();
