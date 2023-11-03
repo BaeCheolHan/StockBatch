@@ -177,7 +177,10 @@ public class TodayTotalInvestmentTallyUpJob extends BaseBatch {
 	}
 
 	private ItemWriter<DailyTotalInvestmentAmount> writer() {
-		return list -> list.forEach(dailyTotalInvestmentAmountRepository::save);
+		return list -> list.forEach(dailyTotalInvestmentAmount -> {
+			if (!dailyTotalInvestmentAmount.getTotalInvestmentAmount().equals(BigDecimal.ZERO))
+				dailyTotalInvestmentAmountRepository.save(dailyTotalInvestmentAmount);
+		});
 	}
 
 
