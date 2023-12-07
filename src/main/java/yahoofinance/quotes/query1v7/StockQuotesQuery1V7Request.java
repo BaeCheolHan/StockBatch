@@ -143,6 +143,17 @@ public class StockQuotesQuery1V7Request extends QuotesRequest<Stock> {
             }
         }
 
+        if(node.has("dividendRate")) {
+            dividend.setDividendRate(Utils.getBigDecimal(this.getStringValue(node, "dividendRate")));
+        }
+
+        if(node.has("dividendYield")) {
+            BigDecimal dividendYield = Utils.getBigDecimal(this.getStringValue(node, "dividendYield"));
+            if (dividendYield != null) {
+                dividend.setDividendYield(dividendYield);
+            }
+        }
+
         return dividend;
     }
 

@@ -26,7 +26,14 @@ import yahoofinance.Stock;
 import yahoofinance.YahooFinance;
 import yahoofinance.histquotes2.HistoricalDividend;
 
-import java.util.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Configuration
@@ -110,10 +117,16 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 		DividendInfo dividendInfo = new DividendInfo();
 		Stock stock;
 		try {
-			String symbol = stocks.getNational().equals("US") ? stocks.getSymbol() : stocks.getSymbol().concat(".KS");
+			String symbol = stocks.getNational().equals("US") ? stocks.getSymbol() : (stocks.getCode().equals("KOSPI") ? stocks.getSymbol().concat(".KS") : stocks.getSymbol().concat(".KQ"));
 			stock = YahooFinance.get(symbol);
+			BigDecimal price = stock.getQuote().getPrice();
+			BigDecimal change = stock.getQuote().getChangeInPercent();
+			BigDecimal peg = stock.getStats().getPeg();
+			BigDecimal dividend = stock.getDividend().getAnnualYieldPercent();
 
-			dividendInfo.setSymbol(symbol);
+			stock.print();
+
+			dividendInfo.setSymbol(stocks.getSymbol());
 			dividendInfo.setAnnualDividend(stock.getDividend().getAnnualYield());
 			dividendInfo.setDividendRate(stock.getDividend().getAnnualYieldPercent());
 			Calendar calendar = Calendar.getInstance();
@@ -126,11 +139,13 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 						.dividend(it.getAdjDividend())
 						.date(it.getDateStr())
 						.build()).toList());
-
 			}
+
+
 		} catch (Exception ignore) {
 			dividendInfo = new DividendInfo();
 		}
+
 
 		return dividendInfo;
 	};

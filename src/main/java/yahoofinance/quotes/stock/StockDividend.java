@@ -1,6 +1,8 @@
 
 package yahoofinance.quotes.stock;
 
+import lombok.Getter;
+
 import java.math.BigDecimal;
 import java.util.Calendar;
 
@@ -11,39 +13,38 @@ import java.util.Calendar;
  */
 public class StockDividend {
     
+    @Getter
     private final String symbol;
     
+    @Getter
     private Calendar payDate;
+    @Getter
     private Calendar exDate;
     private BigDecimal annualYield;
     private BigDecimal annualYieldPercent;
-    
+
+    @Getter
+    private BigDecimal dividendRate;
+
+    @Getter
+    private BigDecimal dividendYield;
+
     public StockDividend(String symbol) {
         this.symbol = symbol;
     }
     
-    public StockDividend(String symbol, Calendar payDate, Calendar exDate, BigDecimal annualYield, BigDecimal annualYieldPercent) {
+    public StockDividend(String symbol, Calendar payDate, Calendar exDate, BigDecimal annualYield, BigDecimal annualYieldPercent, BigDecimal dividendRate, BigDecimal dividendYield) {
         this(symbol);
         this.payDate = payDate;
         this.exDate = exDate;
         this.annualYield = annualYield;
         this.annualYieldPercent = annualYieldPercent;
-    }
-
-    public String getSymbol() {
-        return symbol;
-    }
-    
-    public Calendar getPayDate() {
-        return payDate;
+        this.dividendRate = dividendRate;
+        this.dividendYield = dividendYield;
     }
 
     public void setPayDate(Calendar payDate) {
         this.payDate = payDate;
-    }
-
-    public Calendar getExDate() {
-        return exDate;
     }
 
     public void setExDate(Calendar exDate) {
@@ -51,7 +52,7 @@ public class StockDividend {
     }
     
     public BigDecimal getAnnualYield() {
-        return annualYield == null ? BigDecimal.ZERO : annualYield;
+        return annualYield == null ? dividendYield : annualYield;
     }
     
     public void setAnnualYield(BigDecimal annualYield) {
@@ -59,13 +60,22 @@ public class StockDividend {
     }
     
     public BigDecimal getAnnualYieldPercent() {
-        return annualYieldPercent == null ? BigDecimal.ZERO : annualYieldPercent;
+        return annualYieldPercent == null ? dividendRate : annualYieldPercent;
     }
     
     public void setAnnualYieldPercent(BigDecimal annualYieldPercent) {
         this.annualYieldPercent = annualYieldPercent;
     }
-    
+
+
+    public void setDividendYield(BigDecimal dividendYield) {
+        this.dividendYield = dividendYield;
+    }
+
+    public void setDividendRate(BigDecimal dividendRate) {
+        this.dividendRate = dividendRate;
+    }
+
     @Override
     public String toString() {
         String payDateStr = "/";
