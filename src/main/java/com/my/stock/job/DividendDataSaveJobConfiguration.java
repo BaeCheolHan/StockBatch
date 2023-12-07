@@ -119,12 +119,6 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 		try {
 			String symbol = stocks.getNational().equals("US") ? stocks.getSymbol() : (stocks.getCode().equals("KOSPI") ? stocks.getSymbol().concat(".KS") : stocks.getSymbol().concat(".KQ"));
 			stock = YahooFinance.get(symbol);
-			BigDecimal price = stock.getQuote().getPrice();
-			BigDecimal change = stock.getQuote().getChangeInPercent();
-			BigDecimal peg = stock.getStats().getPeg();
-			BigDecimal dividend = stock.getDividend().getAnnualYieldPercent();
-
-			stock.print();
 
 			dividendInfo.setSymbol(stocks.getSymbol());
 			dividendInfo.setAnnualDividend(stock.getDividend().getAnnualYield());
