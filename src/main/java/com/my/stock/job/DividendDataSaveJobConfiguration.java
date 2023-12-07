@@ -3,6 +3,7 @@ package com.my.stock.job;
 import com.my.stock.base.BaseBatch;
 import com.my.stock.dto.StockDividendHistory;
 import com.my.stock.rdb.entity.Stocks;
+import com.my.stock.rdb.repository.StockRepository;
 import com.my.stock.rdb.repository.StocksRepository;
 import com.my.stock.redis.entity.DividendInfo;
 import com.my.stock.redis.repository.DividendInfoRepository;
@@ -33,16 +34,19 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 
 	private final StocksRepository stocksRepository;
 
+	private final StockRepository stockRepository;
+
 	private final DividendInfoRepository dividendInfoRepository;
 
 	private String targetSymbol;
 
 
-	public DividendDataSaveJobConfiguration(DividendInfoRepository dividendInfoRepository, StocksRepository stocksRepository) {
+	public DividendDataSaveJobConfiguration(DividendInfoRepository dividendInfoRepository, StocksRepository stocksRepository, StockRepository stockRepository) {
 		super("DividendDataSaveJob", "0 0 0 * * ?", null);
 
 		this.dividendInfoRepository = dividendInfoRepository;
 		this.stocksRepository = stocksRepository;
+		this.stockRepository = stockRepository;
 
 	}
 
@@ -88,8 +92,8 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 					stockSymbols = new ArrayList<>();
 					stockSymbols.add(stocksRepository.findBySymbol(targetSymbol).orElseThrow(Exception::new));
 				} else {
-					List<String> nationals = Arrays.asList("KR", "US");
-					stockSymbols = stocksRepository.findAllByNationalIn(nationals);
+					List<String> symbols = stockRepository.findSymbolAllGropBySymbol();
+					stockSymbols = stocksRepository.findAllBySymbolIn(symbols);
 				}
 			}
 

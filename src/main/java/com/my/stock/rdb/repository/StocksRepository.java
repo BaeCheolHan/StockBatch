@@ -20,4 +20,6 @@ public interface StocksRepository extends JpaRepository<Stocks, String> {
 	Optional<Stocks> findBySymbol(String symbol);
 
 	List<Stocks> findAllByNationalIn(List<String> nationals);
+
+	List<Stocks> findAllBySymbolIn(List<String> symbols);
 }

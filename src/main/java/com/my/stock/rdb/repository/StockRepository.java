@@ -16,6 +16,9 @@ public interface StockRepository extends JpaRepository<Stock, Long>, StockReposi
 	@Query(value = "SELECT stock.symbol FROM stock INNER JOIN stocks on stock.symbol = stocks.symbol WHERE stocks.national=:national GROUP BY stock.symbol", nativeQuery = true)
 	List<String> findSymbolByNationalGroupBySymbol(@Param("national")String national);
 
-	@Query(value = "SELECT stock.symbol, stocks.code FROM stock INNER JOIN stocks on stock.symbol = stocks.symbol WHERE stocks.national !=:national GROUP BY stock.symbol", nativeQuery = true)
+	@Query(value = "SELECT stock.symbol FROM stock  GROUP BY stock.symbol", nativeQuery = true)
 	List<SymbolAndCodeInterface> findSymbolAndCodeNotNationalGroupBySymbol(@Param("national")String national);
+
+	@Query(value = "SELECT stock.symbol FROM stock  GROUP BY stock.symbol", nativeQuery = true)
+	List<String> findSymbolAllGropBySymbol();
 }
