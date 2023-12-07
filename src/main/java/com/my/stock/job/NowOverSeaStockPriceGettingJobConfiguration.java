@@ -32,7 +32,7 @@ import java.util.Optional;
 
 @Slf4j
 @Configuration
-public class NowOverSeaStockPriceGettingJob extends BaseBatch {
+public class NowOverSeaStockPriceGettingJobConfiguration extends BaseBatch {
 
 	private final StockRepository stockRepository;
 
@@ -42,7 +42,7 @@ public class NowOverSeaStockPriceGettingJob extends BaseBatch {
 
 	private final KisApiUtils kisApiUtils;
 
-	public NowOverSeaStockPriceGettingJob(StockRepository stockRepository, KisApiUtils kisApiUtils
+	public NowOverSeaStockPriceGettingJobConfiguration(StockRepository stockRepository, KisApiUtils kisApiUtils
 			, OverSeaNowStockPriceRepository overSeaNowStockPriceRepository, KisApi kisApi) {
 		super("ToNightOverSeaStockPriceGettingJob", "0 0/10 20-23 * * ?", null);
 

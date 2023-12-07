@@ -51,7 +51,7 @@ public class SimpleJobConfiguration extends BaseBatch {
 	public Step simpleStep(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
 		return new StepBuilder("simpleStep", jobRepository)
 				.tasklet((contribution, chunkContext) -> {
-					log.info(">>>>> This is Step");
+//					log.info(">>>>> This is Step");
 					return RepeatStatus.FINISHED;
 				}, platformTransactionManager).build();
 	}

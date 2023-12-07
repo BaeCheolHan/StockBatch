@@ -29,7 +29,7 @@ import java.util.Optional;
 
 @Slf4j
 @Configuration
-public class NowKrStockPriceGettingJob extends BaseBatch {
+public class NowKrStockPriceGettingJobConfiguration extends BaseBatch {
 
 	private final StockRepository stockRepository;
 
@@ -40,7 +40,7 @@ public class NowKrStockPriceGettingJob extends BaseBatch {
 	private final KisApiUtils kisApiUtils;
 
 
-	public NowKrStockPriceGettingJob(StockRepository stockRepository, KisApiUtils kisApiUtils, KrNowStockPriceRepository krNowStockPriceRepository, KisApi kisApi) {
+	public NowKrStockPriceGettingJobConfiguration(StockRepository stockRepository, KisApiUtils kisApiUtils, KrNowStockPriceRepository krNowStockPriceRepository, KisApi kisApi) {
 		super("NowKrStockPriceGettingJob", "0 0/10 8-17 * * ?", null);
 		this.stockRepository = stockRepository;
 		this.kisApiUtils = kisApiUtils;

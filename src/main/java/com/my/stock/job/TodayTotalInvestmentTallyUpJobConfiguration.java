@@ -40,7 +40,7 @@ import java.util.Optional;
 
 @Slf4j
 @Configuration
-public class TodayTotalInvestmentTallyUpJob extends BaseBatch {
+public class TodayTotalInvestmentTallyUpJobConfiguration extends BaseBatch {
 
 
 	private final StocksRepository stocksRepository;
@@ -62,7 +62,7 @@ public class TodayTotalInvestmentTallyUpJob extends BaseBatch {
 	private final KisApi kisApi;
 
 
-	public TodayTotalInvestmentTallyUpJob(
+	public TodayTotalInvestmentTallyUpJobConfiguration(
 			EntityManagerFactory entityManagerFactory
 			, StocksRepository stocksRepository
 			, KrNowStockPriceRepository krNowStockPriceRepository
@@ -99,7 +99,7 @@ public class TodayTotalInvestmentTallyUpJob extends BaseBatch {
 				.<Member, DailyTotalInvestmentAmount>chunk(10, platformTransactionManager)
 				.reader(memberReader())
 				.processor(todayTotalInvestmentTallyUpProcessor())
-				.writer(writer())
+				.writer(todayTotalInvestmentTallyUpWriter())
 				.build();
 	}
 
@@ -158,7 +158,6 @@ public class TodayTotalInvestmentTallyUpJob extends BaseBatch {
 										e.printStackTrace();
 										throw new RuntimeException(e);
 									}
-									log.info(stock.getSymbol());
 									return overSeaNowStockPriceRepository.findById(stock.getSymbol()).orElseThrow(() -> new RuntimeException("NOT FOUND SYMBOL"));
 								});
 
@@ -176,7 +175,8 @@ public class TodayTotalInvestmentTallyUpJob extends BaseBatch {
 		};
 	}
 
-	private ItemWriter<DailyTotalInvestmentAmount> writer() {
+	@Bean
+	public ItemWriter<DailyTotalInvestmentAmount> todayTotalInvestmentTallyUpWriter() {
 		return list -> list.forEach(dailyTotalInvestmentAmount -> {
 			if (!dailyTotalInvestmentAmount.getTotalInvestmentAmount().equals(BigDecimal.ZERO))
 				dailyTotalInvestmentAmountRepository.save(dailyTotalInvestmentAmount);
