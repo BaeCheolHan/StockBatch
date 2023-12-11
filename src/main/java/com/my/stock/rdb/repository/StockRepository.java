@@ -1,6 +1,5 @@
 package com.my.stock.rdb.repository;
 
-import com.my.stock.dto.SymbolAndCode;
 import com.my.stock.dto.SymbolAndCodeInterface;
 import com.my.stock.rdb.entity.Stock;
 import com.my.stock.rdb.repository.custom.StockRepositoryCustom;
@@ -19,6 +18,6 @@ public interface StockRepository extends JpaRepository<Stock, Long>, StockReposi
 	@Query(value = "SELECT stock.symbol FROM stock  GROUP BY stock.symbol", nativeQuery = true)
 	List<SymbolAndCodeInterface> findSymbolAndCodeNotNationalGroupBySymbol(@Param("national")String national);
 
-	@Query(value = "SELECT stock.symbol FROM stock  GROUP BY stock.symbol", nativeQuery = true)
-	List<String> findSymbolAllGropBySymbol();
+	@Query(value = "SELECT stock.symbol FROM stock LEFT JOIN dividend ON stock.symbol = dividend.symbol GROUP BY stock.symbol", nativeQuery = true)
+	List<String> findSymbolAllLeftJoinDividendGropBySymbol();
 }

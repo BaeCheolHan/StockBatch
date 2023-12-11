@@ -97,7 +97,7 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 					stockSymbols.add(stocksRepository.findBySymbol(targetSymbol).orElseThrow(Exception::new));
 				} else {
 					List<DividendInfo> l = (List<DividendInfo>) dividendInfoRepository.findAll();
-					List<String> symbols = stockRepository.findSymbolAllGropBySymbol();
+					List<String> symbols = stockRepository.findSymbolAllLeftJoinDividendGropBySymbol();
 
 					List<String> joinedSymbols = Stream.concat(symbols.stream(), l.stream().map(DividendInfo::getSymbol)).distinct().toList();
 					stockSymbols = stocksRepository.findAllBySymbolIn(joinedSymbols);
