@@ -67,11 +67,13 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 
 		@Override
 		public void beforeJob(JobExecution jobExecution) {
+			log.info("DividendDataSaveJob start");
 			targetSymbol = jobExecution.getJobParameters().getString("symbol");
 		}
 
 		@Override
 		public void afterJob(JobExecution jobExecution) {
+			log.info("DividendDataSaveJob end");
 
 		}
 	};
@@ -109,16 +111,19 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 				return null;
 			}
 
+			log.info("symbols size is" + stockSymbols.size());
 			return stockSymbols.remove(0);
 		}
 	};
 
 	private final ItemProcessor<Stocks, DividendInfo> dividendDataProcessor = stocks -> {
+		log.info("dividend info target symbol is " + stocks.getSymbol());
 		DividendInfo dividendInfo = new DividendInfo();
 		Stock stock;
 		try {
 			String symbol = stocks.getNational().equals("US") ? stocks.getSymbol() : (stocks.getCode().equals("KOSPI") ? stocks.getSymbol().concat(".KS") : stocks.getSymbol().concat(".KQ"));
 			stock = YahooFinance.get(symbol);
+
 
 			dividendInfo.setSymbol(stocks.getSymbol());
 			dividendInfo.setAnnualDividend(stock.getDividend().getAnnualYield());
@@ -134,7 +139,6 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 						.date(it.getDateStr())
 						.build()).toList());
 			}
-
 
 		} catch (Exception ignore) {
 			dividendInfo = new DividendInfo();
