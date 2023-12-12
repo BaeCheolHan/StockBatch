@@ -28,5 +28,5 @@ public class DividendInfo {
 
 	@TimeToLive
 	@Builder.Default
-	private Long expiration = 90000000L;
+	private Long expiration = 90000L;
 }
