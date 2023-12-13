@@ -46,7 +46,7 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 
 
 	public DividendDataSaveJobConfiguration(DividendInfoRepository dividendInfoRepository, StocksRepository stocksRepository, StockRepository stockRepository) {
-		super("DividendDataSaveJob", "0 0 0 * * ?", null);
+		super("DividendDataSaveJob", "0 0 */4 * * ?", null);
 
 		this.dividendInfoRepository = dividendInfoRepository;
 		this.stocksRepository = stocksRepository;
