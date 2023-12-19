@@ -25,8 +25,4 @@ public class DividendInfo {
 	private BigDecimal dividendRate;
 
 	private List<StockDividendHistory> dividendHistories;
-
-	@TimeToLive
-	@Builder.Default
-	private Long expiration = 90000L;
 }
