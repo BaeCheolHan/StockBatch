@@ -19,9 +19,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 @Slf4j
 @Configuration
-public class StocksListUpdateJob extends BaseBatch {
+public class StocksListUpdateJobConfiguration extends BaseBatch {
 
-	public StocksListUpdateJob() {
+	public StocksListUpdateJobConfiguration() {
 		super("StocksListUpdateJob", "0 0 1 1 * ?", null);
 	}
 
