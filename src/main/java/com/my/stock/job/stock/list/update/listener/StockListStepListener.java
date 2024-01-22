@@ -93,7 +93,6 @@ public class StockListStepListener {
 			public ExitStatus afterStep(StepExecution stepExecution) {
 				List<String> fileNames = (List<String>) stepExecution.getExecutionContext().get("downloadFileList");
 				for(String filName : fileNames) {
-					System.out.println(filName);
 					new File("/tmp/".concat(filName)).delete();
 					new File("/tmp/".concat(filName).concat(".zip")).delete();
 				}
