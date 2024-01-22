@@ -14,7 +14,7 @@ public class StocksItemWriterConfig {
 
 	@Bean
 	public ItemWriter<Stocks> stocksItemWriter() {
-		return chunk -> stocksRepository.saveAll(chunk);
+		return stocksRepository::saveAll;
 	}
 
 	@Bean
