@@ -107,7 +107,6 @@ public class NowOverSeaStockPriceGettingJobConfiguration extends BaseBatch {
 			HttpHeaders headers = kisApiUtils.getDefaultApiHeader();
 			headers.add("tr_id", "HHDFS76200200");
 			headers.add("custtype", "P");
-			log.info("nowOverSeaStockPriceGettingStep :: symbol is " + item.getSymbol());
 			OverSeaNowStockPriceWrapper response = kisApi.getOverSeaStockPrice(headers, OverSeaStockPriceRequest.builder()
 					.AUTH("")
 					.EXCD(item.getCode())
