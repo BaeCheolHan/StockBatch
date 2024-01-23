@@ -109,6 +109,46 @@ public class StockSymbolReadingTest {
 		t2.delete();
 	}
 
+	@Test
+	void testKospiMsiFileRead() throws IOException {
+
+		String kosdaqCodeUrl = "https://new.real.download.dws.co.kr/common/master/kospi_code.mst.zip";
+		String downloadPath = "/tmp/";
+		String downloadFileName = downloadFileAndGetFileName(new URL(kosdaqCodeUrl), downloadPath);
+
+		if (downloadFileName.substring(downloadFileName.lastIndexOf(".")).equalsIgnoreCase(".zip")) {
+			this.unzipFile(downloadPath, downloadFileName);
+			downloadFileName = downloadFileName.replace(".zip", "");
+		}
+
+		BufferedReader br = null;
+		File mstFile = new File("/tmp/kospi_code.mst");
+		br = new BufferedReader(new InputStreamReader(new FileInputStream(mstFile), "cp949"));
+
+		StringBuffer sb = new StringBuffer();
+
+		String readLine = null;
+		while ((readLine = br.readLine()) != null) {
+			String t1 = readLine.substring(0, readLine.length() - 228);
+			String t2 = t1.substring(0, 9).trim();
+			String t3 = t1.substring(9, 21);
+			String t4 = t1.substring(21);
+
+			System.out.println(t1);
+			System.out.println(t2);
+			System.out.println(t3);
+			System.out.println(t4);
+//			System.out.println(readLine.substring(readLine.length() - 222));
+			System.out.println("-------------------------------------------------------------------");
+		}
+		br.close();
+
+		File t1 = new File("./kosdaq_code.mst");
+		File t2 = new File("./kosdaq_code.mst.zip");
+		t1.delete();
+		t2.delete();
+	}
+
 	public void unzipFile(String filePath, String fileName) throws IOException {
 
 		File zipFile = new File(filePath, fileName);

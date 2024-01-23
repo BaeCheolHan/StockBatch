@@ -50,7 +50,7 @@ public class StockListUpdateItemReader {
 
 		flatFileItemReader.setResource(new FileSystemResource("/tmp/kospi_code.mst"));
 		flatFileItemReader.setLineMapper((line, lineNumber) -> {
-			String infoLine = line.substring(0, line.length() - 222);
+			String infoLine = line.substring(0, line.length() - 228);
 			String symbol = infoLine.substring(0, 9).trim();
 			String generalCode = infoLine.substring(9, 21);
 			String name = infoLine.substring(21);
