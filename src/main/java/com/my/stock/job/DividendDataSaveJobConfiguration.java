@@ -134,22 +134,20 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 		DividendInfo dividendInfo = new DividendInfo();
 		Stock stock;
 		try {
-			String symbol;
+			String symbol = stocks.getSymbol();
 
 			switch (stocks.getNational()) {
 				case "KR":
-					symbol = stocks.getSymbol();
 					if (stocks.getCode().equals("KOSPI")) {
-						symbol.concat(".KS");
+						symbol = symbol.concat(".KS");
 					} else {
-						symbol.concat(".KQ");
+						symbol= symbol.concat(".KQ");
 					}
 					break;
 				case "JP":
-					symbol = stocks.getSymbol().concat(".T");
+					symbol = symbol.concat(".T");
 					break;
 				default:
-					symbol = stocks.getSymbol();
 					break;
 			}
 
