@@ -147,6 +147,10 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 				case "JP":
 					symbol = symbol.concat(".T");
 					break;
+				case "CN":
+					if(stocks.getCode().equals("SZS"))
+						symbol = symbol.concat(".SZ");
+					break;
 				default:
 					break;
 			}
