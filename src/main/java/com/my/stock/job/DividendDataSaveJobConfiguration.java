@@ -2,11 +2,14 @@ package com.my.stock.job;
 
 import com.my.stock.base.BaseBatch;
 import com.my.stock.dto.StockDividendHistory;
+import com.my.stock.dto.kis.response.KrStockVolumeRankOutput;
 import com.my.stock.rdb.entity.Stocks;
 import com.my.stock.rdb.repository.StockRepository;
 import com.my.stock.rdb.repository.StocksRepository;
 import com.my.stock.redis.entity.DividendInfo;
+import com.my.stock.redis.entity.KrStockVolumeRank;
 import com.my.stock.redis.repository.DividendInfoRepository;
+import com.my.stock.redis.repository.KrStockVolumeRankRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
@@ -30,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -42,16 +46,18 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 
 	private final DividendInfoRepository dividendInfoRepository;
 
+	private final KrStockVolumeRankRepository krStockVolumeRankRepository;
+
 	private String targetSymbol;
 
 
-	public DividendDataSaveJobConfiguration(DividendInfoRepository dividendInfoRepository, StocksRepository stocksRepository, StockRepository stockRepository) {
+	public DividendDataSaveJobConfiguration(DividendInfoRepository dividendInfoRepository, StocksRepository stocksRepository, StockRepository stockRepository, KrStockVolumeRankRepository krStockVolumeRankRepository) {
 		super("DividendDataSaveJob", "0 0 * * * ?", null);
 
 		this.dividendInfoRepository = dividendInfoRepository;
 		this.stocksRepository = stocksRepository;
 		this.stockRepository = stockRepository;
-
+		this.krStockVolumeRankRepository = krStockVolumeRankRepository;
 	}
 
 
@@ -99,7 +105,21 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 					List<DividendInfo> l = (List<DividendInfo>) dividendInfoRepository.findAll();
 					List<String> symbols = stockRepository.findSymbolAllLeftJoinDividendGropBySymbol();
 
-					List<String> joinedSymbols = Stream.concat(symbols.stream(), l.stream().map(DividendInfo::getSymbol)).distinct().toList();
+					Optional<KrStockVolumeRank> krStockVolumeRanks = krStockVolumeRankRepository.findById("0000");
+
+					List<String> krStockVolumeRankSymbols = krStockVolumeRanks.stream()
+							.map(it -> it.getData().getOutput().stream().map(KrStockVolumeRankOutput::getMksc_shrn_iscd).collect(Collectors.toList()))
+							.flatMap(List::stream)
+							.toList();
+
+					List<String> joinedSymbols = Stream.of(symbols.stream(), l.stream().map(DividendInfo::getSymbol), krStockVolumeRankSymbols.stream())
+							.flatMap(stringStream -> stringStream)
+							.distinct()
+							.toList();
+//					List<String> joinedSymbols = Stream.concat(symbols.stream(), l.stream().map(DividendInfo::getSymbol))
+
+
+
 					stockSymbols = stocksRepository.findAllBySymbolIn(joinedSymbols);
 				}
 			}
