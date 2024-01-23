@@ -116,9 +116,6 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 							.flatMap(stringStream -> stringStream)
 							.distinct()
 							.toList();
-//					List<String> joinedSymbols = Stream.concat(symbols.stream(), l.stream().map(DividendInfo::getSymbol))
-
-
 
 					stockSymbols = stocksRepository.findAllBySymbolIn(joinedSymbols);
 				}
