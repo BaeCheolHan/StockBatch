@@ -108,8 +108,8 @@ public class OverSeaNowStockPrice {
 	// ETP 분류명
 	private String etyp_nm;
 
-	@TimeToLive(unit = TimeUnit.MINUTES)
+	@TimeToLive(unit = TimeUnit.DAYS)
 	@Builder.Default
-	private Long expiration = 5L;
+	private Long expiration = 1L;
 
 }
