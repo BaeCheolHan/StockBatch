@@ -45,9 +45,11 @@ public class CrumbManager {
         RedirectableRequest redirectableRequest = new RedirectableRequest(request, 5);
         redirectableRequest.setConnectTimeout(YahooFinance.CONNECTION_TIMEOUT);
         redirectableRequest.setReadTimeout(YahooFinance.CONNECTION_TIMEOUT);
-        
-       
-        URLConnection connection = redirectableRequest.openConnection();
+
+        Map<String, String> requestProperties = new HashMap<>();
+        requestProperties.put("User-Agent", "Mozilla/5.0 (Window NT 10.0; Win64; rv:109.0) Gecko/20100101 Firefox/115.0");
+
+        URLConnection connection = redirectableRequest.openConnection(requestProperties);
        
         for(String headerKey : connection.getHeaderFields().keySet()) {        	
             if("Set-Cookie".equalsIgnoreCase(headerKey)) {
