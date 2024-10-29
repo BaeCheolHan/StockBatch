@@ -121,7 +121,7 @@ public class TodayTotalInvestmentTallyUpJobConfiguration extends BaseBatch {
 			List<BankAccount> accounts = bankAccountRepository.findAllByMemberId(member.getId());
 			BigDecimal totalInvestmentAmount = BigDecimal.ZERO;
 			BigDecimal totalEvaluationAmount = BigDecimal.ZERO;
-			List<ExchangeRate> exchangeRateList = exchangeRateRepository.findAll();
+			ExchangeRate exchangeRateEntity = exchangeRateRepository.findFirstByOrderByIdDesc();
 
 			for (BankAccount account : accounts) {
 				totalInvestmentAmount = totalInvestmentAmount.add(account.getStocks().stream().map(stock -> {
@@ -129,7 +129,7 @@ public class TodayTotalInvestmentTallyUpJobConfiguration extends BaseBatch {
 					if (stocks.getNational().equals("KR")) {
 						return stock.getQuantity().multiply(stock.getPrice());
 					} else {
-						return stock.getQuantity().multiply(stock.getPrice()).multiply(exchangeRateList.get(exchangeRateList.size() - 1).getBasePrice());
+						return stock.getQuantity().multiply(stock.getPrice()).multiply(exchangeRateEntity.getBasePrice());
 					}
 				}).reduce(BigDecimal.ZERO, BigDecimal::add));
 
@@ -161,7 +161,7 @@ public class TodayTotalInvestmentTallyUpJobConfiguration extends BaseBatch {
 									return overSeaNowStockPriceRepository.findById(stock.getSymbol()).orElseThrow(() -> new RuntimeException("NOT FOUND SYMBOL"));
 								});
 
-						return stock.getQuantity().multiply(entity.getLast()).multiply(exchangeRateList.get(exchangeRateList.size() - 1).getBasePrice());
+						return stock.getQuantity().multiply(entity.getLast()).multiply(exchangeRateEntity.getBasePrice());
 					}
 				}).reduce(BigDecimal.ZERO, BigDecimal::add));
 			}
