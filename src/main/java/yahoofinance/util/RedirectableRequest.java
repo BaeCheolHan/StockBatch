@@ -41,6 +41,7 @@ public class RedirectableRequest {
         URL currentRequest = this.request;
         while(!hasResponse && (redirectCount <= this.protocolRedirectLimit)) {
             connection = (HttpURLConnection) currentRequest.openConnection();
+            connection.setInstanceFollowRedirects(true);
             connection.setConnectTimeout(this.connectTimeout);
             connection.setReadTimeout(this.readTimeout);
 
@@ -105,4 +106,6 @@ public class RedirectableRequest {
     public void setReadTimeout(int readTimeout) {
         this.readTimeout = readTimeout;
     }
+
+
 }

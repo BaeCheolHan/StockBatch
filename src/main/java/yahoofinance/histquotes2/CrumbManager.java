@@ -1,5 +1,10 @@
 package yahoofinance.histquotes2;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import yahoofinance.YahooFinance;
+import yahoofinance.util.RedirectableRequest;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -17,12 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import yahoofinance.YahooFinance;
-import yahoofinance.util.RedirectableRequest;
 
 /**
  * Created by Stijn on 23/05/2017.
@@ -47,13 +46,16 @@ public class CrumbManager {
         redirectableRequest.setReadTimeout(YahooFinance.CONNECTION_TIMEOUT);
 
         Map<String, String> requestProperties = new HashMap<>();
-        requestProperties.put("User-Agent", "Mozilla/5.0 (Window NT 10.0; Win64; rv:109.0) Gecko/20100101 Firefox/115.0");
+        requestProperties.put("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36");
+        requestProperties.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+        requestProperties.put("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7");
+        requestProperties.put("Referer", "https://finance.yahoo.com/");
 
         URLConnection connection = redirectableRequest.openConnection(requestProperties);
-       
-        for(String headerKey : connection.getHeaderFields().keySet()) {        	
+
+        for(String headerKey : connection.getHeaderFields().keySet()) {
             if("Set-Cookie".equalsIgnoreCase(headerKey)) {
-                for(String cookieField : connection.getHeaderFields().get(headerKey)) {                	
+                for(String cookieField : connection.getHeaderFields().get(headerKey)) {
                     for(String cookieValue : cookieField.split(";")) {
                         if(cookieValue.matches("B=.*")) {
                             cookie = cookieValue;
@@ -64,7 +66,6 @@ public class CrumbManager {
                 }
             }
         }
-        
         //  If cookie is not set, we should consent to activate cookie
         InputStreamReader is = new InputStreamReader(connection.getInputStream());
         BufferedReader br = new BufferedReader(is);
