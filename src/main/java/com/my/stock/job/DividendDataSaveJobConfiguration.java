@@ -165,7 +165,7 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 
 			List<HistoricalDividend> history = stock.getDividendHistory(calendar);
 			if (history != null && !history.isEmpty()) {
-				dividendInfo.setDividendHistories(history.stream().map(it -> StockDividendHistory.builder()
+				dividendInfo.setDividendHistories(history.stream().filter(it -> it.getDate() != null).map(it -> StockDividendHistory.builder()
 						.symbol(stocks.getSymbol())
 						.dividend(it.getAdjDividend())
 						.date(it.getDateStr())
@@ -173,6 +173,7 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 			}
 
 		} catch (Exception ignore) {
+			ignore.printStackTrace();
 			dividendInfo = new DividendInfo();
 		}
 

@@ -6,7 +6,12 @@ import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -247,6 +252,35 @@ public class Utils {
         } catch (ParseException ex) {
             log.warn("Failed to parse datetime: " + datetime);
             log.debug("Failed to parse datetime: " + datetime, ex);
+        }
+        return null;
+    }
+
+    public static Calendar parseHistDateV2(String date) {
+        DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.US);
+
+        try {
+            if (Utils.isParseable(date)) {
+                // 문자열 타임스탬프를 long으로 변환
+                long timestamp = Long.parseLong(date);
+                // 타임스탬프를 LocalDate로 변환
+                LocalDate localDate = Instant.ofEpochSecond(timestamp)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate();
+
+                // LocalDate를 Date로 변환
+                Date parsedDate = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+                // Date를 Calendar로 설정
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(parsedDate);
+
+                return calendar;
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            log.warn("Failed to parse hist date: " + date);
+            log.debug("Failed to parse hist date: " + date, ex);
         }
         return null;
     }

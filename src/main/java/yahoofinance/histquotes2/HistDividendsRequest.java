@@ -1,5 +1,10 @@
 package yahoofinance.histquotes2;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import yahoofinance.Utils;
 import yahoofinance.YahooFinance;
 import yahoofinance.util.RedirectableRequest;
@@ -10,13 +15,16 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
-import java.util.*;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- *
  * @author Stijn Strickx (modified by Randle McMurphy)
  */
 public class HistDividendsRequest {
@@ -33,6 +41,7 @@ public class HistDividendsRequest {
     static {
         DEFAULT_FROM.add(Calendar.YEAR, -1);
     }
+
     public static final Calendar DEFAULT_TO = Calendar.getInstance();
 
     // Interval has no meaning here and is not used here
@@ -59,6 +68,7 @@ public class HistDividendsRequest {
 
     /**
      * Put everything smaller than days at 0
+     *
      * @param cal calendar to be cleaned
      */
     private Calendar cleanHistCalendar(Calendar cal) {
@@ -72,8 +82,8 @@ public class HistDividendsRequest {
     public List<HistoricalDividend> getResult() throws IOException {
 
         List<HistoricalDividend> result = new ArrayList<HistoricalDividend>();
-        
-        if(this.from.after(this.to)) {
+
+        if (this.from.after(this.to)) {
             log.warn("Unable to retrieve historical dividends. "
                     + "From-date should not be after to-date. From: "
                     + this.from.getTime() + ", to: " + this.to.getTime());
@@ -87,13 +97,13 @@ public class HistDividendsRequest {
         // Interval has no meaning here and is not used here
         // But it's better to leave it because Yahoo's standard query URL still contains it
         params.put("interval", DEFAULT_INTERVAL.getTag());
-        
+
         // This will instruct Yahoo to return dividends
         params.put("events", "div");
 
         params.put("crumb", CrumbManager.getCrumb());
 
-        String url = YahooFinance.HISTQUOTES2_BASE_URL + URLEncoder.encode(this.symbol , "UTF-8") + "?" + Utils.getURLParameters(params);
+        String url = YahooFinance.HISTQUOTES2_BASE_URL + URLEncoder.encode(this.symbol, "UTF-8") + "?" + Utils.getURLParameters(params);
 
         // Get CSV from Yahoo
 //        log.info("Sending request: " + url);
@@ -108,15 +118,51 @@ public class HistDividendsRequest {
 
         InputStreamReader is = new InputStreamReader(connection.getInputStream());
         BufferedReader br = new BufferedReader(is);
-        br.readLine(); // skip the first line
+//        br.readLine(); // skip the first line
         // Parse CSV
         for (String line = br.readLine(); line != null; line = br.readLine()) {
 
+            if(line.startsWith("{\"chart\":")) {
+                result = this.parseJson(line);
+                break;
+            }
 //            log.info("Parsing CSV line: " + Utils.unescape(line));
-            HistoricalDividend dividend = this.parseCSVLine(line);
-            result.add(dividend);
+
+//            result.add(dividend);
         }
         return result;
+    }
+
+    private List<HistoricalDividend> parseJson(String line) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode jsonNode = objectMapper.readTree(line);
+        JsonNode chart = jsonNode.get("chart");
+        JsonNode result = chart.get("result");
+        JsonNode events = result.get(0).get("events");
+        List<HistoricalDividend> l = new ArrayList<>();
+        if(events != null) {
+            JsonNode dividends = events.get("dividends");
+
+            try {
+
+                Iterator<Map.Entry<String, JsonNode>> fields = dividends.fields();
+                while (fields.hasNext()) {
+                    Map.Entry<String, JsonNode> field = fields.next();
+                    JsonNode value = field.getValue();
+
+                    double amount = value.get("amount").asDouble();
+                    long date = value.get("date").asLong();
+
+                    l.add(new HistoricalDividend(this.symbol,
+                            Utils.parseHistDateV2(String.valueOf(date)),
+                            Utils.getBigDecimal(String.valueOf(amount))
+                    ));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return l;
     }
 
     private HistoricalDividend parseCSVLine(String line) {

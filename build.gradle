@@ -80,7 +80,7 @@ tasks.named('test') {
 tasks.register('copyPrivate', Copy) {
     delete "/src/main/resources"
     copy {
-        from './StockManager-private/batch/resources'
+        from '$projectDir/../../StockManager-private/batch/resources'
         include "*.*"
         into '/src/main/resources'
     }
