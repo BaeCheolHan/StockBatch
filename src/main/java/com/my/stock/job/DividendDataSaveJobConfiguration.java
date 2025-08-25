@@ -12,8 +12,6 @@ import com.my.stock.redis.repository.DividendInfoRepository;
 import com.my.stock.redis.repository.KrStockVolumeRankRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
@@ -22,15 +20,17 @@ import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
-import yahoofinance.Stock;
-import yahoofinance.YahooFinance;
-import yahoofinance.histquotes2.HistoricalDividend;
+import com.my.stock.api.YfinApi;
+import com.my.stock.dto.yfin.DividendsResponse;
+import com.my.stock.dto.yfin.QuoteDto;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -48,128 +48,116 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 
 	private final KrStockVolumeRankRepository krStockVolumeRankRepository;
 
-	private String targetSymbol;
+	private final YfinApi yfinApi;
 
-
-	public DividendDataSaveJobConfiguration(DividendInfoRepository dividendInfoRepository, StocksRepository stocksRepository, StockRepository stockRepository, KrStockVolumeRankRepository krStockVolumeRankRepository) {
+	public DividendDataSaveJobConfiguration(DividendInfoRepository dividendInfoRepository, StocksRepository stocksRepository, StockRepository stockRepository, KrStockVolumeRankRepository krStockVolumeRankRepository, YfinApi yfinApi) {
 		super("DividendDataSaveJob", "0 0 * * * ?", null);
 
 		this.dividendInfoRepository = dividendInfoRepository;
 		this.stocksRepository = stocksRepository;
 		this.stockRepository = stockRepository;
 		this.krStockVolumeRankRepository = krStockVolumeRankRepository;
+		this.yfinApi = yfinApi;
 	}
-
 
 	@Bean
 	public Job DividendDataSaveJob(JobRepository jobRepository, Step dividendDataSaveJobStep) {
 		return new JobBuilder("DividendDataSaveJob", jobRepository)
-				.listener(jobListener)
 				.start(dividendDataSaveJobStep)
 				.build();
 	}
 
-	private final JobExecutionListener jobListener = new JobExecutionListener() {
-
-		@Override
-		public void beforeJob(JobExecution jobExecution) {
-			targetSymbol = jobExecution.getJobParameters().getString("symbol");
-		}
-
-		@Override
-		public void afterJob(JobExecution jobExecution) {
-
-		}
-	};
-
 	@Bean
-	public Step dividendDataSaveJobStep(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
+	public Step dividendDataSaveJobStep(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager,
+				ItemReader<Stocks> dividendStockReader,
+				ItemProcessor<Stocks, DividendInfo> dividendDataProcessor,
+				ItemWriter<DividendInfo> dividendWriter) {
 		return new StepBuilder("dividendDataSaveJobStep", jobRepository)
-				.<Stocks, DividendInfo>chunk(1, platformTransactionManager)
-				.reader(stockSymbolReader)
+				.<Stocks, DividendInfo>chunk(10, platformTransactionManager)
+				.reader(dividendStockReader)
 				.processor(dividendDataProcessor)
-				.writer(writer)
+				.writer(dividendWriter)
+				.faultTolerant()
+				.retryLimit(2)
+				.retry(Exception.class)
+				.skipLimit(50)
+				.skip(Exception.class)
 				.build();
 	}
 
-	private final ItemReader<Stocks> stockSymbolReader = new ItemReader<>() {
-		List<Stocks> stockSymbols = null;
+	@Bean
+	@StepScope
+	public ItemReader<Stocks> dividendStockReader(@Value("#{jobParameters['symbol']}") String targetSymbol) {
+		return new ItemReader<>() {
+			List<Stocks> stockSymbols = null;
 
-		@Override
-		public Stocks read() throws Exception {
-			if (stockSymbols == null) {
-				if (targetSymbol != null) {
-					stockSymbols = new ArrayList<>();
-					stockSymbols.add(stocksRepository.findBySymbol(targetSymbol).orElseThrow(Exception::new));
-				} else {
-					List<DividendInfo> l = (List<DividendInfo>) dividendInfoRepository.findAll();
-					List<String> symbols = stockRepository.findSymbolAllLeftJoinDividendGropBySymbol();
+			@Override
+			public Stocks read() throws Exception {
+				if (stockSymbols == null) {
+					if (targetSymbol != null) {
+						stockSymbols = new ArrayList<>();
+						stockSymbols.add(stocksRepository.findBySymbol(targetSymbol).orElseThrow(Exception::new));
+					} else {
+						List<DividendInfo> l = (List<DividendInfo>) dividendInfoRepository.findAll();
+						List<String> symbols = stockRepository.findSymbolAllLeftJoinDividendGropBySymbol();
 
-					Optional<KrStockVolumeRank> krStockVolumeRanks = krStockVolumeRankRepository.findById("0000");
+						Optional<KrStockVolumeRank> krStockVolumeRanks = krStockVolumeRankRepository.findById("0000");
 
-					List<String> krStockVolumeRankSymbols = krStockVolumeRanks.stream()
-							.map(it -> it.getData().getOutput().stream().map(KrStockVolumeRankOutput::getMksc_shrn_iscd).collect(Collectors.toList()))
-							.flatMap(List::stream)
-							.toList();
+						List<String> krStockVolumeRankSymbols = krStockVolumeRanks.stream()
+								.map(it -> it.getData().getOutput().stream().map(KrStockVolumeRankOutput::getMksc_shrn_iscd).collect(Collectors.toList()))
+								.flatMap(List::stream)
+								.toList();
 
-					List<String> joinedSymbols = Stream.of(symbols.stream(), l.stream().map(DividendInfo::getSymbol), krStockVolumeRankSymbols.stream())
-							.flatMap(stringStream -> stringStream)
-							.distinct()
-							.toList();
+						List<String> joinedSymbols = Stream.of(symbols.stream(), l.stream().map(DividendInfo::getSymbol), krStockVolumeRankSymbols.stream())
+								.flatMap(stringStream -> stringStream)
+								.distinct()
+								.toList();
 
-					stockSymbols = stocksRepository.findAllBySymbolIn(joinedSymbols);
+						stockSymbols = stocksRepository.findAllBySymbolIn(joinedSymbols);
+					}
 				}
+
+				if (stockSymbols.isEmpty()) {
+					stockSymbols = null;
+					return null;
+				}
+
+				return stockSymbols.remove(0);
 			}
+		};
+	}
 
-			if (stockSymbols.isEmpty()) {
-				stockSymbols = null;
-				return null;
-			}
-
-			return stockSymbols.remove(0);
-		}
-	};
-
-	private final ItemProcessor<Stocks, DividendInfo> dividendDataProcessor = stocks -> {
+	@Bean
+	@StepScope
+	public ItemProcessor<Stocks, DividendInfo> dividendDataProcessor() { return stocks -> {
 		DividendInfo dividendInfo = new DividendInfo();
-		Stock stock;
 		try {
 			String symbol = stocks.getSymbol();
 
-			switch (stocks.getNational()) {
-				case "KR":
-					if (stocks.getCode().equals("KOSPI")) {
-						symbol = symbol.concat(".KS");
-					} else {
-						symbol= symbol.concat(".KQ");
-					}
-					break;
-				case "JP":
-					symbol = symbol.concat(".T");
-					break;
-				case "CN":
-					if(stocks.getCode().equals("SZS"))
-						symbol = symbol.concat(".SZ");
-					break;
-				default:
-					break;
-			}
+			// yfin 서버에서 심볼 정규화를 처리하므로 원본 심볼을 그대로 전달
 
-			stock = YahooFinance.get(symbol);
+			QuoteDto quote = yfinApi.getQuote(symbol, null);
+			DividendsResponse dividends = yfinApi.getDividends(symbol, "5y", null);
 
 			dividendInfo.setSymbol(stocks.getSymbol());
-			dividendInfo.setAnnualDividend(stock.getDividend().getAnnualYield());
-			dividendInfo.setDividendRate(stock.getDividend().getAnnualYieldPercent());
-			Calendar calendar = Calendar.getInstance();
-			calendar.set(1970, Calendar.FEBRUARY, 1);
+			if (quote != null) {
+				Double rate = (quote.getForwardDividendRate() != null) ? quote.getForwardDividendRate() : quote.getTrailingAnnualDividendRate();
+				if (rate != null) dividendInfo.setAnnualDividend(BigDecimal.valueOf(rate));
 
-			List<HistoricalDividend> history = stock.getDividendHistory(calendar);
-			if (history != null && !history.isEmpty()) {
-				dividendInfo.setDividendHistories(history.stream().filter(it -> it.getDate() != null).map(it -> StockDividendHistory.builder()
-						.symbol(stocks.getSymbol())
-						.dividend(it.getAdjDividend())
-						.date(it.getDateStr())
-						.build()).toList());
+				Double yieldPct = (quote.getForwardDividendYieldPct() != null)
+						? quote.getForwardDividendYieldPct()
+						: (quote.getTrailingAnnualDividendYield() != null ? quote.getTrailingAnnualDividendYield() * 100.0 : null);
+				if (yieldPct != null) dividendInfo.setDividendRate(BigDecimal.valueOf(yieldPct));
+			}
+
+			if (dividends != null && dividends.getRows() != null && !dividends.getRows().isEmpty()) {
+				dividendInfo.setDividendHistories(dividends.getRows().stream()
+						.map(r -> StockDividendHistory.builder()
+								.symbol(stocks.getSymbol())
+								.dividend(r.getAmount() == null ? null : BigDecimal.valueOf(r.getAmount()))
+								.date(r.getDate())
+								.build())
+						.toList());
 			}
 
 		} catch (Exception ignore) {
@@ -177,22 +165,17 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 			dividendInfo = new DividendInfo();
 		}
 
-
 		return dividendInfo;
-	};
+	}; }
 
-
-	private final ItemWriter<DividendInfo> writer = new ItemWriter<>() {
-		@Override
-		public void write(Chunk<? extends DividendInfo> chunk) {
-			chunk.forEach(item -> {
-				if (item.getSymbol() != null) {
-					Optional<DividendInfo> entity = dividendInfoRepository.findById(item.getSymbol());
-					entity.ifPresent(dividendInfoRepository::delete);
-					dividendInfoRepository.save(item);
-				}
-			});
-		}
-	};
-
+	@Bean
+	@StepScope
+	public ItemWriter<DividendInfo> dividendWriter() {
+		return new ItemWriter<>() {
+			@Override
+			public void write(Chunk<? extends DividendInfo> chunk) {
+				chunk.forEach(dividendInfoRepository::save);
+			}
+		};
+	}
 }

@@ -7,7 +7,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = true)
 @Builder
 @Entity
 @Table
