@@ -162,7 +162,6 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 			}
 
 		} catch (Exception ignore) {
-			ignore.printStackTrace();
 			dividendInfo = new DividendInfo();
 		}
 

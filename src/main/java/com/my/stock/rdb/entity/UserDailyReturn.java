@@ -1,10 +1,14 @@
 package com.my.stock.rdb.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "user_daily_return",
         uniqueConstraints = {
@@ -41,22 +45,6 @@ public class UserDailyReturn {
     @Column(name = "cum_index", precision = 19, scale = 10)
     private BigDecimal cumIndex;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public LocalDate getDate() { return date; }
-    public void setDate(LocalDate date) { this.date = date; }
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
-    public BigDecimal getNavBegin() { return navBegin; }
-    public void setNavBegin(BigDecimal navBegin) { this.navBegin = navBegin; }
-    public BigDecimal getNavEnd() { return navEnd; }
-    public void setNavEnd(BigDecimal navEnd) { this.navEnd = navEnd; }
-    public BigDecimal getNetFlow() { return netFlow; }
-    public void setNetFlow(BigDecimal netFlow) { this.netFlow = netFlow; }
-    public BigDecimal getDailyTwr() { return dailyTwr; }
-    public void setDailyTwr(BigDecimal dailyTwr) { this.dailyTwr = dailyTwr; }
-    public BigDecimal getCumIndex() { return cumIndex; }
-    public void setCumIndex(BigDecimal cumIndex) { this.cumIndex = cumIndex; }
 }
 
 

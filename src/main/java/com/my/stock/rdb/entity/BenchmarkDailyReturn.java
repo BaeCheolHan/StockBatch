@@ -1,10 +1,14 @@
 package com.my.stock.rdb.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "benchmark_daily_return",
         uniqueConstraints = {
@@ -31,18 +35,6 @@ public class BenchmarkDailyReturn {
 
     private BigDecimal cumIndex; // 초기 100, 이후 곱셈 누적
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public LocalDate getDate() { return date; }
-    public void setDate(LocalDate date) { this.date = date; }
-    public String getSymbol() { return symbol; }
-    public void setSymbol(String symbol) { this.symbol = symbol; }
-    public BigDecimal getClose() { return close; }
-    public void setClose(BigDecimal close) { this.close = close; }
-    public BigDecimal getDailyReturn() { return dailyReturn; }
-    public void setDailyReturn(BigDecimal dailyReturn) { this.dailyReturn = dailyReturn; }
-    public BigDecimal getCumIndex() { return cumIndex; }
-    public void setCumIndex(BigDecimal cumIndex) { this.cumIndex = cumIndex; }
 }
 
 

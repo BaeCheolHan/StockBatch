@@ -1,5 +1,6 @@
 package com.my.stock.config;
 
+import lombok.Getter;
 import org.quartz.JobDetail;
 import org.quartz.Trigger;
 import org.springframework.batch.core.configuration.JobLocator;
@@ -9,33 +10,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class QuartzJobUtil {
-	private static JobLauncher jobLauncher;
-	public static JobLauncher getJobLauncher() {
-		return jobLauncher;
-	}
-	public static void setJobLauncher(JobLauncher jobLauncher) {
+	@Getter private static JobLauncher jobLauncher;
+
+    public static void setJobLauncher(JobLauncher jobLauncher) {
 		QuartzJobUtil.jobLauncher = jobLauncher;
 	}
 
-	private static JobLocator jobLocator;
-	public static JobLocator getJobLocator() {
-		return jobLocator;
-	}
-	public static void setJobLocator(JobLocator jobLocator) {
+	@Getter private static JobLocator jobLocator;
+
+    public static void setJobLocator(JobLocator jobLocator) {
 		QuartzJobUtil.jobLocator = jobLocator;
 	}
 	
 //	private static List<Map<String, Trigger>> listBatchJob = new ArrayList<>();
 
-	private static List<Trigger> triggers = new ArrayList<>();
-	private static List<JobDetail> jobDetails = new ArrayList<>();
-
-	public static List<Trigger> getTriggers() {
-		return triggers;
-	}
-
-	public static List<JobDetail> getJobDetails() {
-		return jobDetails;
-	}
+	@Getter private static List<Trigger> triggers = new ArrayList<>();
+	@Getter private static List<JobDetail> jobDetails = new ArrayList<>();
 
 }

@@ -96,9 +96,9 @@ public class AccountTwrDailyJobConfiguration extends BaseBatch {
         return member -> {
             List<BankAccount> accounts = bankAccountRepository.findAllByMemberId(member.getId());
             ExchangeRate fx = exchangeRateRepository.findFirstByOrderByIdDesc();
-            BigDecimal navBegin = BigDecimal.ZERO;
+            BigDecimal navBegin;
             BigDecimal navEnd = BigDecimal.ZERO;
-            Long accountId = null;
+            Long accountId;
             if (accounts.isEmpty()) return null;
             BankAccount account = accounts.get(0);
             accountId = account.getId();
@@ -119,7 +119,7 @@ public class AccountTwrDailyJobConfiguration extends BaseBatch {
 
             BigDecimal netFlow = BigDecimal.ZERO;
             BigDecimal daily = BigDecimal.ZERO;
-            if (navBegin != null && navBegin.signum() != 0) {
+            if (navBegin.signum() != 0) {
                 daily = navEnd.subtract(navBegin).subtract(netFlow)
                         .divide(navBegin, 10, java.math.RoundingMode.HALF_UP);
             }
