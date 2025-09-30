@@ -27,13 +27,17 @@ public abstract class BaseBatch {
 		return TriggerBuilder.newTrigger()
 				.forJob(jobDetail)
 				.withIdentity(jobDetail.getJobDataMap().getString("jobName").concat("Trigger"))
-				.withSchedule(CronScheduleBuilder.cronSchedule(scheduleExp))
+				.withSchedule(CronScheduleBuilder.cronSchedule(scheduleExp)
+						.withMisfireHandlingInstructionDoNothing())
 				.build();
 	}
 
 	public Trigger buildJobTrigger(String jobName, int value, HashMap<String, Object> param) {
 		JobDetail jobDetail = buildJobDetail(jobName, param);
-		SimpleScheduleBuilder scheduleBuilder = SimpleScheduleBuilder.simpleSchedule().withIntervalInSeconds(value).repeatForever();
+		SimpleScheduleBuilder scheduleBuilder = SimpleScheduleBuilder.simpleSchedule()
+				.withIntervalInSeconds(value)
+				.repeatForever()
+				.withMisfireHandlingInstructionNextWithRemainingCount();
 		return TriggerBuilder
 				.newTrigger()
 				.forJob(jobDetail)

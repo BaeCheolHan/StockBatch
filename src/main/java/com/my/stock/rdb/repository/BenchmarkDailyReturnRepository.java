@@ -14,6 +14,16 @@ public interface BenchmarkDailyReturnRepository extends JpaRepository<BenchmarkD
     Optional<BenchmarkDailyReturn> findTopBySymbolAndDateLessThanOrderByDateDesc(String symbol, LocalDate date);
     List<BenchmarkDailyReturn> findAllBySymbolAndDateBetweenOrderByDateAsc(String symbol, LocalDate from, LocalDate to);
     Optional<BenchmarkDailyReturn> findBySymbolAndDate(String symbol, LocalDate date);
+
+    default void upsert(BenchmarkDailyReturn entity) {
+        findBySymbolAndDate(entity.getSymbol(), entity.getDate())
+                .ifPresentOrElse(prev -> {
+                    prev.setClose(entity.getClose());
+                    prev.setDailyReturn(entity.getDailyReturn());
+                    prev.setCumIndex(entity.getCumIndex());
+                    save(prev);
+                }, () -> save(entity));
+    }
 }
 
 

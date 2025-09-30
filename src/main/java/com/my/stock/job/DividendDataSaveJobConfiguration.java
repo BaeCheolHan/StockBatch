@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 import com.my.stock.api.YfinApi;
+import com.my.stock.service.YfinResilientClient;
 import com.my.stock.dto.yfin.DividendsResponse;
 import com.my.stock.dto.yfin.QuoteDto;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,16 +49,16 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 
 	private final KrStockVolumeRankRepository krStockVolumeRankRepository;
 
-	private final YfinApi yfinApi;
+    private final YfinResilientClient yfinClient;
 
-	public DividendDataSaveJobConfiguration(DividendInfoRepository dividendInfoRepository, StocksRepository stocksRepository, StockRepository stockRepository, KrStockVolumeRankRepository krStockVolumeRankRepository, YfinApi yfinApi) {
+    public DividendDataSaveJobConfiguration(DividendInfoRepository dividendInfoRepository, StocksRepository stocksRepository, StockRepository stockRepository, KrStockVolumeRankRepository krStockVolumeRankRepository, YfinApi yfinApi, YfinResilientClient yfinClient) {
 		super("DividendDataSaveJob", "0 0 * * * ?", null);
 
 		this.dividendInfoRepository = dividendInfoRepository;
 		this.stocksRepository = stocksRepository;
 		this.stockRepository = stockRepository;
-		this.krStockVolumeRankRepository = krStockVolumeRankRepository;
-		this.yfinApi = yfinApi;
+        this.krStockVolumeRankRepository = krStockVolumeRankRepository;
+        this.yfinClient = yfinClient;
 	}
 
 	@Bean
@@ -78,7 +79,7 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 				.processor(dividendDataProcessor)
 				.writer(dividendWriter)
 				.faultTolerant()
-				.retryLimit(2)
+                .retryLimit(3)
 				.retry(Exception.class)
 				.skipLimit(50)
 				.skip(Exception.class)
@@ -129,15 +130,15 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 
 	@Bean
 	@StepScope
-	public ItemProcessor<Stocks, DividendInfo> dividendDataProcessor() { return stocks -> {
+    public ItemProcessor<Stocks, DividendInfo> dividendDataProcessor() { return stocks -> {
 		DividendInfo dividendInfo = new DividendInfo();
 		try {
 			String symbol = stocks.getSymbol();
 
 			// yfin 서버에서 심볼 정규화를 처리하므로 원본 심볼을 그대로 전달
 
-			QuoteDto quote = yfinApi.getQuote(symbol, null);
-			DividendsResponse dividends = yfinApi.getDividends(symbol, "5y", null);
+            QuoteDto quote = yfinClient.getQuote(symbol, null);
+            DividendsResponse dividends = yfinClient.getDividends(symbol, "5y", null);
 
 			dividendInfo.setSymbol(stocks.getSymbol());
 			if (quote != null) {

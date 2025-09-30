@@ -6,9 +6,15 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "user_daily_return", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_user_date", columnNames = {"date", "user_id"})
-})
+@Table(name = "user_daily_return",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_user_date", columnNames = {"date", "user_id"})
+        },
+        indexes = {
+                @Index(name = "idx_user_date", columnList = "user_id,date"),
+                @Index(name = "idx_date_user", columnList = "date,user_id")
+        }
+)
 public class UserDailyReturn {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

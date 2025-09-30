@@ -23,6 +23,7 @@ import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilde
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -73,11 +74,12 @@ public class UserTwrDailyJobConfiguration extends BaseBatch {
                 .reader(memberReaderForUsers())
                 .processor(userTwrProcessor())
                 .writer(userTwrWriter())
-                .faultTolerant().retryLimit(2).retry(Exception.class).skipLimit(100).skip(Exception.class)
+                .faultTolerant().retryLimit(3).retry(Exception.class).skipLimit(50).skip(Exception.class)
                 .build();
     }
 
     @Bean
+    @StepScope
     public JpaPagingItemReader<Member> memberReaderForUsers() {
         return new JpaPagingItemReaderBuilder<Member>()
                 .name("memberReaderForUsers")
@@ -88,6 +90,7 @@ public class UserTwrDailyJobConfiguration extends BaseBatch {
     }
 
     @Bean
+    @StepScope
     public ItemProcessor<Member, UserDailyReturn> userTwrProcessor() {
         return member -> {
             List<BankAccount> accounts = bankAccountRepository.findAllByMemberId(member.getId());
@@ -135,19 +138,11 @@ public class UserTwrDailyJobConfiguration extends BaseBatch {
     }
 
     @Bean
+    @StepScope
     public ItemWriter<UserDailyReturn> userTwrWriter() {
         return list -> {
             for (UserDailyReturn e : list) {
-                userDailyReturnRepository.findTopByUserIdOrderByDateDesc(e.getUserId())
-                        .filter(prev -> prev.getDate().isEqual(e.getDate()))
-                        .ifPresentOrElse(prev -> {
-                            prev.setNavBegin(e.getNavBegin());
-                            prev.setNavEnd(e.getNavEnd());
-                            prev.setNetFlow(e.getNetFlow());
-                            prev.setDailyTwr(e.getDailyTwr());
-                            prev.setCumIndex(e.getCumIndex());
-                            userDailyReturnRepository.save(prev);
-                        }, () -> userDailyReturnRepository.save(e));
+                userDailyReturnRepository.upsert(e);
             }
         };
     }

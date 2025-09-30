@@ -1,6 +1,5 @@
 package com.my.stock.job;
 
-import com.my.stock.api.KisApi;
 import com.my.stock.base.BaseBatch;
 import com.my.stock.dto.KrNowStockPriceWrapper;
 import com.my.stock.dto.OverSeaNowStockPriceWrapper;
@@ -16,6 +15,7 @@ import com.my.stock.redis.entity.OverSeaNowStockPrice;
 import com.my.stock.redis.repository.KrNowStockPriceRepository;
 import com.my.stock.redis.repository.OverSeaNowStockPriceRepository;
 import com.my.stock.util.KisApiUtils;
+import com.my.stock.service.KisResilientClient;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -32,6 +32,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -59,7 +60,7 @@ public class TodayTotalInvestmentTallyUpJobConfiguration extends BaseBatch {
 
 	private final KisApiUtils kisApiUtils;
 
-	private final KisApi kisApi;
+    private final KisResilientClient kisClient;
 
 
 	public TodayTotalInvestmentTallyUpJobConfiguration(
@@ -71,7 +72,7 @@ public class TodayTotalInvestmentTallyUpJobConfiguration extends BaseBatch {
 			, ExchangeRateRepository exchangeRateRepository
 			, DailyTotalInvestmentAmountRepository dailyTotalInvestmentAmountRepository
 			, KisApiUtils kisApiUtils
-			, KisApi kisApi
+            , KisResilientClient kisClient
 	) {
 		super("TodayTotalInvestmentTallyUpJob", "0 1 0 * * ?", null);
 		this.entityManagerFactory = entityManagerFactory;
@@ -80,9 +81,9 @@ public class TodayTotalInvestmentTallyUpJobConfiguration extends BaseBatch {
 		this.overSeaNowStockPriceRepository = overSeaNowStockPriceRepository;
 		this.bankAccountRepository = bankAccountRepository;
 		this.exchangeRateRepository = exchangeRateRepository;
-		this.dailyTotalInvestmentAmountRepository = dailyTotalInvestmentAmountRepository;
-		this.kisApiUtils = kisApiUtils;
-		this.kisApi = kisApi;
+        this.dailyTotalInvestmentAmountRepository = dailyTotalInvestmentAmountRepository;
+        this.kisApiUtils = kisApiUtils;
+        this.kisClient = kisClient;
 	}
 
 	@Bean
@@ -92,19 +93,21 @@ public class TodayTotalInvestmentTallyUpJobConfiguration extends BaseBatch {
 				.build();
 	}
 
-	@Bean
-	@Transactional
-	public Step TodayTotalInvestmentTallyUpStep(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
+    @Bean
+    @Transactional
+    public Step TodayTotalInvestmentTallyUpStep(JobRepository jobRepository, PlatformTransactionManager platformTransactionManager) {
 		return new StepBuilder("TodayTotalInvestmentTallyUpStep", jobRepository)
 				.<Member, DailyTotalInvestmentAmount>chunk(10, platformTransactionManager)
 				.reader(memberReader())
 				.processor(todayTotalInvestmentTallyUpProcessor())
 				.writer(todayTotalInvestmentTallyUpWriter())
+                .faultTolerant().retryLimit(3).retry(Exception.class).skipLimit(50).skip(Exception.class)
 				.build();
 	}
 
-	@Bean
-	public JpaPagingItemReader<Member> memberReader() {
+    @Bean
+    @StepScope
+    public JpaPagingItemReader<Member> memberReader() {
 		return new JpaPagingItemReaderBuilder<Member>()
 				.name("memberReader")
 				.entityManagerFactory(entityManagerFactory)
@@ -113,8 +116,9 @@ public class TodayTotalInvestmentTallyUpJobConfiguration extends BaseBatch {
 				.build();
 	}
 
-	@Bean
-	public ItemProcessor<Member, DailyTotalInvestmentAmount> todayTotalInvestmentTallyUpProcessor() {
+    @Bean
+    @StepScope
+    public ItemProcessor<Member, DailyTotalInvestmentAmount> todayTotalInvestmentTallyUpProcessor() {
 
 		return member -> {
 
@@ -175,11 +179,12 @@ public class TodayTotalInvestmentTallyUpJobConfiguration extends BaseBatch {
 		};
 	}
 
-	@Bean
-	public ItemWriter<DailyTotalInvestmentAmount> todayTotalInvestmentTallyUpWriter() {
-		return list -> list.forEach(dailyTotalInvestmentAmount -> {
-			if (!dailyTotalInvestmentAmount.getTotalInvestmentAmount().equals(BigDecimal.ZERO))
-				dailyTotalInvestmentAmountRepository.save(dailyTotalInvestmentAmount);
+    @Bean
+    @StepScope
+    public ItemWriter<DailyTotalInvestmentAmount> todayTotalInvestmentTallyUpWriter() {
+		return list -> list.forEach(d -> {
+			if (!d.getTotalInvestmentAmount().equals(BigDecimal.ZERO))
+				dailyTotalInvestmentAmountRepository.upsert(d);
 		});
 	}
 
@@ -191,7 +196,7 @@ public class TodayTotalInvestmentTallyUpJobConfiguration extends BaseBatch {
 			headers.add("tr_id", "HHDFS76200200");
 			headers.add("custtype", "P");
 
-			OverSeaNowStockPriceWrapper response = kisApi.getOverSeaStockPrice(headers, OverSeaStockPriceRequest.builder()
+            OverSeaNowStockPriceWrapper response = kisClient.getOverSeaStockPrice(headers, OverSeaStockPriceRequest.builder()
 					.AUTH("")
 					.EXCD(stocks.getCode())
 					.SYMB(stocks.getSymbol())
@@ -210,7 +215,7 @@ public class TodayTotalInvestmentTallyUpJobConfiguration extends BaseBatch {
 					.fid_input_iscd(symbol)
 					.build();
 
-			KrNowStockPriceWrapper response = kisApi.getKorStockPrice(headers, request);
+            KrNowStockPriceWrapper response = kisClient.getKorStockPrice(headers, request);
 
 			response.getOutput().setSymbol(symbol);
 			Optional<KrNowStockPrice> entity = krNowStockPriceRepository.findById(response.getOutput().getSymbol());

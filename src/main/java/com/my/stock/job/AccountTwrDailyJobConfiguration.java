@@ -24,6 +24,7 @@ import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilde
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -74,11 +75,12 @@ public class AccountTwrDailyJobConfiguration extends BaseBatch {
                 .reader(memberReaderForAccounts())
                 .processor(accountTwrProcessor())
                 .writer(accountTwrWriter())
-                .faultTolerant().retryLimit(2).retry(Exception.class).skipLimit(100).skip(Exception.class)
+                .faultTolerant().retryLimit(3).retry(Exception.class).skipLimit(50).skip(Exception.class)
                 .build();
     }
 
     @Bean
+    @StepScope
     public JpaPagingItemReader<Member> memberReaderForAccounts() {
         return new JpaPagingItemReaderBuilder<Member>()
                 .name("memberReaderForAccounts")
@@ -89,6 +91,7 @@ public class AccountTwrDailyJobConfiguration extends BaseBatch {
     }
 
     @Bean
+    @StepScope
     public ItemProcessor<Member, AccountDailyReturn> accountTwrProcessor() {
         return member -> {
             List<BankAccount> accounts = bankAccountRepository.findAllByMemberId(member.getId());
@@ -137,19 +140,11 @@ public class AccountTwrDailyJobConfiguration extends BaseBatch {
     }
 
     @Bean
+    @StepScope
     public ItemWriter<AccountDailyReturn> accountTwrWriter() {
         return list -> {
             for (AccountDailyReturn e : list) {
-                accountDailyReturnRepository.findTopByAccountIdOrderByDateDesc(e.getAccountId())
-                        .filter(prev -> prev.getDate().isEqual(e.getDate()))
-                        .ifPresentOrElse(prev -> {
-                            prev.setNavBegin(e.getNavBegin());
-                            prev.setNavEnd(e.getNavEnd());
-                            prev.setNetFlow(e.getNetFlow());
-                            prev.setDailyTwr(e.getDailyTwr());
-                            prev.setCumIndex(e.getCumIndex());
-                            accountDailyReturnRepository.save(prev);
-                        }, () -> accountDailyReturnRepository.save(e));
+                accountDailyReturnRepository.upsert(e);
             }
         };
     }

@@ -1,6 +1,6 @@
 package com.my.stock.job;
 
-import com.my.stock.api.YfinApi;
+import com.my.stock.service.YfinResilientClient;
 import com.my.stock.config.BenchmarkConfigProperties;
 import com.my.stock.dto.yfin.HistoryResponse;
 import com.my.stock.rdb.entity.BenchmarkDailyReturn;
@@ -28,15 +28,15 @@ import java.util.*;
 @Configuration
 public class BenchmarkJobsConfiguration {
 
-	private final YfinApi yfinApi;
+    private final YfinResilientClient yfinClient;
 	private final BenchmarkDailyReturnRepository repo;
 	private final BenchmarkConfigProperties props;
 
-	public BenchmarkJobsConfiguration(YfinApi yfinApi, BenchmarkDailyReturnRepository repo, BenchmarkConfigProperties props) {
-		this.yfinApi = yfinApi;
-		this.repo = repo;
-		this.props = props;
-	}
+    public BenchmarkJobsConfiguration(BenchmarkDailyReturnRepository repo, BenchmarkConfigProperties props, YfinResilientClient yfinClient) {
+        this.repo = repo;
+        this.props = props;
+        this.yfinClient = yfinClient;
+    }
 
 	@Bean
 	public Job benchmarkBackfillJob(JobRepository jobRepository, Step benchmarkBackfillStep) {
@@ -55,7 +55,7 @@ public class BenchmarkJobsConfiguration {
 				.reader(mergedBackfillTriggerReader)
 				.processor(mergedBackfillProcessor)
 				.writer(benchmarkWriter)
-				.faultTolerant().retryLimit(3).retry(Exception.class).skipLimit(10).skip(Exception.class)
+				.faultTolerant().retryLimit(3).retry(Exception.class).skipLimit(50).skip(Exception.class)
 				.build();
 	}
 
@@ -89,7 +89,7 @@ public class BenchmarkJobsConfiguration {
 				String symbol = mapDisplaySymbol(code);
 				displayByCode.put(code, symbol);
 				// 백필은 seed 확보를 위해 range=6y로 넉넉히 조회
-				HistoryResponse hr = yfinApi.getHistory(code, "6y", props.getHistory().getInterval(), props.getHistory().isAutoAdjust());
+                HistoryResponse hr = yfinClient.getHistory(code, "6y", props.getHistory().getInterval(), props.getHistory().isAutoAdjust());
 				if (hr == null || hr.getRows() == null || hr.getRows().isEmpty()) continue;
 				Map<LocalDate, BigDecimal> map = closeBySymbol.computeIfAbsent(symbol, k -> new HashMap<>());
 				// track latest before cutoff
@@ -165,16 +165,10 @@ public class BenchmarkJobsConfiguration {
 	@Bean
 	@StepScope
 	public ItemWriter<List<BenchmarkDailyReturn>> benchmarkWriter() {
-		return (Chunk<? extends List<BenchmarkDailyReturn>> chunk) -> {
+        return (Chunk<? extends List<BenchmarkDailyReturn>> chunk) -> {
 			for (List<BenchmarkDailyReturn> list : chunk) {
 				for (BenchmarkDailyReturn e : list) {
-					repo.findBySymbolAndDate(e.getSymbol(), e.getDate())
-							.ifPresentOrElse(prev -> {
-								prev.setClose(e.getClose());
-								prev.setDailyReturn(e.getDailyReturn());
-								prev.setCumIndex(e.getCumIndex());
-								repo.save(prev);
-							}, () -> repo.save(e));
+                    repo.upsert(e);
 				}
 			}
 		};
