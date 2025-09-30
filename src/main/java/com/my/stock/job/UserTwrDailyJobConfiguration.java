@@ -1,6 +1,5 @@
 package com.my.stock.job;
 
-import com.my.stock.base.BaseBatch;
 import com.my.stock.rdb.entity.*;
 import com.my.stock.rdb.repository.BankAccountRepository;
 import com.my.stock.rdb.repository.ExchangeRateRepository;
@@ -24,6 +23,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.batch.core.configuration.annotation.StepScope;
+import com.my.stock.config.ScheduledBatch;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,7 +32,9 @@ import java.util.List;
 import java.util.Optional;
 
 @Configuration
-public class UserTwrDailyJobConfiguration extends BaseBatch {
+@ScheduledBatch(job = "UserTwrDailyJob", cron = "0 10/30 * * * ?")
+@RequiredArgsConstructor
+public class UserTwrDailyJobConfiguration {
 
     private final EntityManagerFactory entityManagerFactory;
     private final BankAccountRepository bankAccountRepository;
@@ -41,24 +44,7 @@ public class UserTwrDailyJobConfiguration extends BaseBatch {
     private final ExchangeRateRepository exchangeRateRepository;
     private final UserDailyReturnRepository userDailyReturnRepository;
 
-    public UserTwrDailyJobConfiguration(
-            EntityManagerFactory entityManagerFactory,
-            BankAccountRepository bankAccountRepository,
-            StocksRepository stocksRepository,
-            KrNowStockPriceRepository krNowStockPriceRepository,
-            OverSeaNowStockPriceRepository overSeaNowStockPriceRepository,
-            ExchangeRateRepository exchangeRateRepository,
-            UserDailyReturnRepository userDailyReturnRepository
-    ) {
-        super("UserTwrDailyJob", "0 10/30 * * * ?", null);
-        this.entityManagerFactory = entityManagerFactory;
-        this.bankAccountRepository = bankAccountRepository;
-        this.stocksRepository = stocksRepository;
-        this.krNowStockPriceRepository = krNowStockPriceRepository;
-        this.overSeaNowStockPriceRepository = overSeaNowStockPriceRepository;
-        this.exchangeRateRepository = exchangeRateRepository;
-        this.userDailyReturnRepository = userDailyReturnRepository;
-    }
+    
 
     @Bean
     public Job UserTwrDailyJob(JobRepository jobRepository, Step userTwrDailyStep) {

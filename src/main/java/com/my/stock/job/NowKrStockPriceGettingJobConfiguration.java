@@ -1,7 +1,6 @@
 package com.my.stock.job;
 
 import com.my.stock.api.KisApi;
-import com.my.stock.base.BaseBatch;
 import com.my.stock.dto.KrNowStockPriceWrapper;
 import com.my.stock.dto.kis.request.KrStockPriceRequest;
 import com.my.stock.rdb.repository.StockRepository;
@@ -22,6 +21,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.transaction.PlatformTransactionManager;
+import com.my.stock.config.ScheduledBatch;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +30,9 @@ import java.util.Optional;
 
 @Slf4j
 @Configuration
-public class NowKrStockPriceGettingJobConfiguration extends BaseBatch {
+@ScheduledBatch(job = "NowKrStockPriceGettingJob", cron = "0 0/10 8-17 * * ?")
+@RequiredArgsConstructor
+public class NowKrStockPriceGettingJobConfiguration {
 
 	private final StockRepository stockRepository;
 
@@ -40,13 +43,7 @@ public class NowKrStockPriceGettingJobConfiguration extends BaseBatch {
 	private final KisApiUtils kisApiUtils;
 
 
-	public NowKrStockPriceGettingJobConfiguration(StockRepository stockRepository, KisApiUtils kisApiUtils, KrNowStockPriceRepository krNowStockPriceRepository, KisApi kisApi) {
-		super("NowKrStockPriceGettingJob", "0 0/10 8-17 * * ?", null);
-		this.stockRepository = stockRepository;
-		this.kisApiUtils = kisApiUtils;
-		this.kisApi = kisApi;
-		this.krNowStockPriceRepository = krNowStockPriceRepository;
-	}
+    
 
 	@Bean
 	public Job NowKrStockPriceGettingJob(JobRepository jobRepository, Step nowKrStockPriceGettingStep) {

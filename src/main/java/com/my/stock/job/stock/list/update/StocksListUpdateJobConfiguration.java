@@ -1,6 +1,4 @@
 package com.my.stock.job.stock.list.update;
-
-import com.my.stock.base.BaseBatch;
 import com.my.stock.rdb.entity.Stocks;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -16,14 +14,14 @@ import org.springframework.batch.item.file.MultiResourceItemReader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
+import com.my.stock.config.ScheduledBatch;
 
 @Slf4j
 @Configuration
-public class StocksListUpdateJobConfiguration extends BaseBatch {
+@ScheduledBatch(job = "StocksListUpdateJob", cron = "0 0 1 1 * ?")
+public class StocksListUpdateJobConfiguration {
 
-	public StocksListUpdateJobConfiguration() {
-		super("StocksListUpdateJob", "0 0 1 1 * ?", null);
-	}
+    public StocksListUpdateJobConfiguration() {}
 
 	@Bean
 	public Job StocksListUpdateJob(JobRepository jobRepository, Step KosdaqStockListUpdateStep, Step KospiStockListUpdateStep, Step OverseaStockListUpdateStep) {

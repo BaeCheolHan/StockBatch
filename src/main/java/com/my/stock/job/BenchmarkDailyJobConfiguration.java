@@ -1,7 +1,6 @@
 package com.my.stock.job;
 
 import com.my.stock.api.YfinApi;
-import com.my.stock.base.BaseBatch;
 import com.my.stock.config.BenchmarkConfigProperties;
 import com.my.stock.dto.yfin.HistoryResponse;
 import com.my.stock.rdb.entity.BenchmarkDailyReturn;
@@ -17,6 +16,8 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
+import com.my.stock.config.ScheduledBatch;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -27,18 +28,15 @@ import java.util.Comparator;
 import java.util.List;
 
 @Configuration
-public class BenchmarkDailyJobConfiguration extends BaseBatch {
+@ScheduledBatch(job = "BenchmarkDailyJob", cron = "0 0/30 * * * ?")
+@RequiredArgsConstructor
+public class BenchmarkDailyJobConfiguration {
 
     private final YfinApi yfinApi;
     private final BenchmarkDailyReturnRepository repo;
     private final BenchmarkConfigProperties props;
 
-    public BenchmarkDailyJobConfiguration(YfinApi yfinApi, BenchmarkDailyReturnRepository repo, BenchmarkConfigProperties props) {
-        super("BenchmarkDailyJob", props.getSchedule() != null ? props.getSchedule().getDailyCron() : "0 30 0 * * ?", null);
-        this.yfinApi = yfinApi;
-        this.repo = repo;
-        this.props = props;
-    }
+    
 
     @Bean
     public Job BenchmarkDailyJob(JobRepository jobRepository, Step benchmarkDailyStep) {

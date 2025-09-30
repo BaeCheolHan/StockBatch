@@ -1,6 +1,4 @@
 package com.my.stock.job;
-
-import com.my.stock.base.BaseBatch;
 import com.my.stock.dto.StockDividendHistory;
 import com.my.stock.dto.kis.response.KrStockVolumeRankOutput;
 import com.my.stock.rdb.entity.Stocks;
@@ -29,6 +27,8 @@ import com.my.stock.service.YfinResilientClient;
 import com.my.stock.dto.yfin.DividendsResponse;
 import com.my.stock.dto.yfin.QuoteDto;
 import org.springframework.beans.factory.annotation.Value;
+import com.my.stock.config.ScheduledBatch;
+import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
 import java.math.BigDecimal;
@@ -39,7 +39,9 @@ import java.util.stream.Stream;
 
 @Slf4j
 @Configuration
-public class DividendDataSaveJobConfiguration extends BaseBatch {
+@ScheduledBatch(job = "DividendDataSaveJob", cron = "0 0 * * * ?")
+@RequiredArgsConstructor
+public class DividendDataSaveJobConfiguration {
 
 	private final StocksRepository stocksRepository;
 
@@ -51,15 +53,7 @@ public class DividendDataSaveJobConfiguration extends BaseBatch {
 
     private final YfinResilientClient yfinClient;
 
-    public DividendDataSaveJobConfiguration(DividendInfoRepository dividendInfoRepository, StocksRepository stocksRepository, StockRepository stockRepository, KrStockVolumeRankRepository krStockVolumeRankRepository, YfinApi yfinApi, YfinResilientClient yfinClient) {
-		super("DividendDataSaveJob", "0 0 * * * ?", null);
-
-		this.dividendInfoRepository = dividendInfoRepository;
-		this.stocksRepository = stocksRepository;
-		this.stockRepository = stockRepository;
-        this.krStockVolumeRankRepository = krStockVolumeRankRepository;
-        this.yfinClient = yfinClient;
-	}
+    
 
 	@Bean
 	public Job DividendDataSaveJob(JobRepository jobRepository, Step dividendDataSaveJobStep) {

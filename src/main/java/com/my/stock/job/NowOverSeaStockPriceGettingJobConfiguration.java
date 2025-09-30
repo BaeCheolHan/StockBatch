@@ -1,7 +1,6 @@
 package com.my.stock.job;
 
 import com.my.stock.api.KisApi;
-import com.my.stock.base.BaseBatch;
 import com.my.stock.config.QuartzJobUtil;
 import com.my.stock.dto.OverSeaNowStockPriceWrapper;
 import com.my.stock.dto.SymbolAndCodeInterface;
@@ -24,6 +23,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.transaction.PlatformTransactionManager;
+import com.my.stock.config.ScheduledBatch;
+import lombok.RequiredArgsConstructor;
 
 import java.util.HashMap;
 import java.util.List;
@@ -32,7 +33,9 @@ import java.util.Optional;
 
 @Slf4j
 @Configuration
-public class NowOverSeaStockPriceGettingJobConfiguration extends BaseBatch {
+@ScheduledBatch(job = "ToNightOverSeaStockPriceGettingJob", cron = "0 0/10 20-23 * * ?")
+@RequiredArgsConstructor
+public class NowOverSeaStockPriceGettingJobConfiguration {
 
 	private final StockRepository stockRepository;
 
@@ -42,12 +45,10 @@ public class NowOverSeaStockPriceGettingJobConfiguration extends BaseBatch {
 
 	private final KisApiUtils kisApiUtils;
 
-	public NowOverSeaStockPriceGettingJobConfiguration(StockRepository stockRepository, KisApiUtils kisApiUtils
-			, OverSeaNowStockPriceRepository overSeaNowStockPriceRepository, KisApi kisApi) {
-		super("ToNightOverSeaStockPriceGettingJob", "0 0/10 20-23 * * ?", null);
-
-		QuartzJobUtil.getJobDetails().add(buildJobDetail("OverNightOverSeaStockPriceGettingJob", new HashMap<>()));
-		QuartzJobUtil.getTriggers().add(buildJobTrigger("OverNightOverSeaStockPriceGettingJob", "0 0/10 0-9 * * ?", new HashMap<>()));
+    public NowOverSeaStockPriceGettingJobConfiguration(StockRepository stockRepository, KisApiUtils kisApiUtils
+            , OverSeaNowStockPriceRepository overSeaNowStockPriceRepository, KisApi kisApi) {
+        QuartzJobUtil.getJobDetails().add(QuartzJobUtil.QuartzJobUtilHelper.buildJobDetail("OverNightOverSeaStockPriceGettingJob"));
+        QuartzJobUtil.getTriggers().add(QuartzJobUtil.QuartzJobUtilHelper.buildCronTrigger("OverNightOverSeaStockPriceGettingJob", "0 0/10 0-9 * * ?"));
 		this.stockRepository = stockRepository;
 		this.kisApiUtils = kisApiUtils;
 		this.overSeaNowStockPriceRepository = overSeaNowStockPriceRepository;

@@ -1,6 +1,4 @@
 package com.my.stock.job;
-
-import com.my.stock.base.BaseBatch;
 import com.my.stock.dto.KrNowStockPriceWrapper;
 import com.my.stock.dto.OverSeaNowStockPriceWrapper;
 import com.my.stock.dto.kis.request.KrStockPriceRequest;
@@ -33,6 +31,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.batch.core.configuration.annotation.StepScope;
+import com.my.stock.config.ScheduledBatch;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -41,7 +41,9 @@ import java.util.Optional;
 
 @Slf4j
 @Configuration
-public class TodayTotalInvestmentTallyUpJobConfiguration extends BaseBatch {
+@ScheduledBatch(job = "TodayTotalInvestmentTallyUpJob", cron = "0 1 0 * * ?")
+@RequiredArgsConstructor
+public class TodayTotalInvestmentTallyUpJobConfiguration {
 
 
 	private final StocksRepository stocksRepository;
@@ -63,28 +65,7 @@ public class TodayTotalInvestmentTallyUpJobConfiguration extends BaseBatch {
     private final KisResilientClient kisClient;
 
 
-	public TodayTotalInvestmentTallyUpJobConfiguration(
-			EntityManagerFactory entityManagerFactory
-			, StocksRepository stocksRepository
-			, KrNowStockPriceRepository krNowStockPriceRepository
-			, OverSeaNowStockPriceRepository overSeaNowStockPriceRepository
-			, BankAccountRepository bankAccountRepository
-			, ExchangeRateRepository exchangeRateRepository
-			, DailyTotalInvestmentAmountRepository dailyTotalInvestmentAmountRepository
-			, KisApiUtils kisApiUtils
-            , KisResilientClient kisClient
-	) {
-		super("TodayTotalInvestmentTallyUpJob", "0 1 0 * * ?", null);
-		this.entityManagerFactory = entityManagerFactory;
-		this.stocksRepository = stocksRepository;
-		this.krNowStockPriceRepository = krNowStockPriceRepository;
-		this.overSeaNowStockPriceRepository = overSeaNowStockPriceRepository;
-		this.bankAccountRepository = bankAccountRepository;
-		this.exchangeRateRepository = exchangeRateRepository;
-        this.dailyTotalInvestmentAmountRepository = dailyTotalInvestmentAmountRepository;
-        this.kisApiUtils = kisApiUtils;
-        this.kisClient = kisClient;
-	}
+    
 
 	@Bean
 	public Job TodayTotalInvestmentTallyUpJob(JobRepository jobRepository, Step TodayTotalInvestmentTallyUpStep) {

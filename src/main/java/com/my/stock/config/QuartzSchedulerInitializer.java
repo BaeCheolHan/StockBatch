@@ -5,14 +5,33 @@ import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
+import jakarta.annotation.PostConstruct;
 
 @Slf4j
 @Component
+@DependsOn("scheduledBatchRegistrar")
 @RequiredArgsConstructor
 public class QuartzSchedulerInitializer implements ApplicationListener<ApplicationReadyEvent> {
 
     private final Scheduler scheduler;
+
+    @PostConstruct
+    public void validateUniqueJobNames() {
+        // fail fast on duplicate job names
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        java.util.Set<String> dup = new java.util.HashSet<>();
+        for (JobDetail jd : QuartzJobUtil.getJobDetails()) {
+            String name = jd.getKey().getName();
+            if (!seen.add(name)) {
+                dup.add(name);
+            }
+        }
+        if (!dup.isEmpty()) {
+            throw new IllegalStateException("Duplicate Quartz job names detected: " + String.join(", ", dup));
+        }
+    }
 
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
