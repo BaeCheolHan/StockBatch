@@ -59,6 +59,7 @@ public class QuartzConfig implements InitializingBean {
 		scheduler.setDataSource(dataSource);
 		scheduler.setTransactionManager((PlatformTransactionManager) transactionManager);
 		scheduler.setQuartzProperties(quartzProperties());
+		scheduler.setOverwriteExistingJobs(true);
 		scheduler.setTriggers(QuartzJobUtil.getTriggers().toArray(new Trigger[QuartzJobUtil.getTriggers().size()]));
 		scheduler.setJobDetails(QuartzJobUtil.getJobDetails().toArray(new JobDetail[QuartzJobUtil.getJobDetails().size()]));
 		return scheduler;

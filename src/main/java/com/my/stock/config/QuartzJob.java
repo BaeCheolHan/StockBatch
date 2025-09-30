@@ -8,9 +8,11 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
+import org.quartz.DisallowConcurrentExecution;
 
 @Slf4j
 @Component
+@DisallowConcurrentExecution
 public class QuartzJob extends QuartzJobBean implements InterruptableJob {
 	@Override
 	public void interrupt() { }
