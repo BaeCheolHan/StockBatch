@@ -36,6 +36,16 @@ public class QuartzSchedulerInitializer implements ApplicationListener<Applicati
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
         try {
+            // Trigger name duplicate check
+            java.util.Set<String> seenTriggers = new java.util.HashSet<>();
+            java.util.Set<String> dupTriggers = new java.util.HashSet<>();
+            for (Trigger t : QuartzJobUtil.getTriggers()) {
+                String name = t.getKey().getName();
+                if (!seenTriggers.add(name)) dupTriggers.add(name);
+            }
+            if (!dupTriggers.isEmpty()) {
+                throw new IllegalStateException("Duplicate Quartz trigger names detected: " + String.join(", ", dupTriggers));
+            }
             // 1) JobDetails 등록
             for (JobDetail jobDetail : QuartzJobUtil.getJobDetails()) {
                 if (!scheduler.checkExists(jobDetail.getKey())) {

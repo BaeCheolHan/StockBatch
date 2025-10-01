@@ -2,9 +2,12 @@ package com.my.stock.job;
 
 import com.my.stock.service.YfinResilientClient;
 import com.my.stock.config.BenchmarkConfigProperties;
+import com.my.stock.config.ScheduledBatch;
 import com.my.stock.dto.yfin.HistoryResponse;
 import com.my.stock.rdb.entity.BenchmarkDailyReturn;
 import com.my.stock.rdb.repository.BenchmarkDailyReturnRepository;
+import com.my.stock.batch.listener.PersistenceClearChunkListener;
+import com.my.stock.batch.listener.StepMetricsListener;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -26,6 +29,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 @Configuration
+@ScheduledBatch(job = "BenchmarkDailyJob", cron = "0 0/30 * * * ?")
 public class BenchmarkJobsConfiguration {
 
     private final YfinResilientClient yfinClient;
@@ -46,15 +50,44 @@ public class BenchmarkJobsConfiguration {
 	}
 
 	@Bean
+	public Job benchmarkDailyJob(JobRepository jobRepository, Step benchmarkDailyStep) {
+		return new JobBuilder("BenchmarkDailyJob", jobRepository)
+				.start(benchmarkDailyStep)
+				.build();
+	}
+
+	@Bean
 	public Step benchmarkBackfillStep(JobRepository jobRepository, PlatformTransactionManager tm,
 									  ItemReader<String> mergedBackfillTriggerReader,
 									  ItemProcessor<String, List<BenchmarkDailyReturn>> mergedBackfillProcessor,
-									  ItemWriter<List<BenchmarkDailyReturn>> benchmarkWriter) {
+									  ItemWriter<List<BenchmarkDailyReturn>> benchmarkWriter,
+									  StepMetricsListener stepMetricsListener,
+									  PersistenceClearChunkListener persistenceClearChunkListener) {
 		return new StepBuilder("benchmarkBackfillStep", jobRepository)
 				.<String, List<BenchmarkDailyReturn>>chunk(1, tm)
 				.reader(mergedBackfillTriggerReader)
 				.processor(mergedBackfillProcessor)
 				.writer(benchmarkWriter)
+				.listener(stepMetricsListener)
+				.listener(persistenceClearChunkListener)
+				.faultTolerant().retryLimit(3).retry(Exception.class).skipLimit(50).skip(Exception.class)
+				.build();
+	}
+
+	@Bean
+	public Step benchmarkDailyStep(JobRepository jobRepository, PlatformTransactionManager tm,
+								   ItemReader<String> benchmarkDailyTriggerReader,
+								   ItemProcessor<String, List<BenchmarkDailyReturn>> benchmarkDailyProcessor,
+								   ItemWriter<List<BenchmarkDailyReturn>> benchmarkWriter,
+								   StepMetricsListener stepMetricsListener,
+								   PersistenceClearChunkListener persistenceClearChunkListener) {
+		return new StepBuilder("benchmarkDailyStep", jobRepository)
+				.<String, List<BenchmarkDailyReturn>>chunk(1, tm)
+				.reader(benchmarkDailyTriggerReader)
+				.processor(benchmarkDailyProcessor)
+				.writer(benchmarkWriter)
+				.listener(stepMetricsListener)
+				.listener(persistenceClearChunkListener)
 				.faultTolerant().retryLimit(3).retry(Exception.class).skipLimit(50).skip(Exception.class)
 				.build();
 	}
@@ -62,6 +95,19 @@ public class BenchmarkJobsConfiguration {
 	@Bean
 	@StepScope
 	public ItemReader<String> mergedBackfillTriggerReader() {
+		return new ItemReader<>() {
+			boolean emitted = false;
+			@Override public String read() {
+				if (emitted) return null;
+				emitted = true;
+				return "ALL";
+			}
+		};
+	}
+
+	@Bean
+	@StepScope
+	public ItemReader<String> benchmarkDailyTriggerReader() {
 		return new ItemReader<>() {
 			boolean emitted = false;
 			@Override public String read() {
@@ -136,6 +182,65 @@ public class BenchmarkJobsConfiguration {
 							// 심볼의 첫 거래 이전엔 기준 종가가 없으므로 건너뜀
 							continue;
 						}
+						close = prevClose;
+						daily = BigDecimal.ZERO;
+					} else {
+						if (prevClose != null && prevClose.signum() != 0) {
+							daily = close.divide(prevClose, 10, java.math.RoundingMode.HALF_UP).subtract(BigDecimal.ONE);
+						}
+					}
+					if (cum == null) cum = BigDecimal.valueOf(100);
+					if (daily != null) cum = cum.multiply(BigDecimal.ONE.add(daily));
+
+					BenchmarkDailyReturn e = new BenchmarkDailyReturn();
+					e.setDate(d);
+					e.setSymbol(symbol);
+					e.setClose(close);
+					e.setDailyReturn(daily);
+					e.setCumIndex(cum);
+					out.add(e);
+					prevClose = close;
+				}
+			}
+
+			out.sort(Comparator.comparing(BenchmarkDailyReturn::getDate).thenComparing(BenchmarkDailyReturn::getSymbol));
+			return out;
+		};
+	}
+
+	@Bean
+	@StepScope
+	public ItemProcessor<String, List<BenchmarkDailyReturn>> benchmarkDailyProcessor() {
+		return trigger -> {
+			List<String> codes = Optional.ofNullable(props.getCodes()).orElseGet(List::of);
+			LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+
+			List<BenchmarkDailyReturn> out = new ArrayList<>();
+			for (String code : codes) {
+				String symbol = mapDisplaySymbol(code);
+				// 최근 구간만 조회하여 부담 최소화
+				HistoryResponse hr = yfinClient.getHistory(code, "1mo", props.getHistory().getInterval(), props.getHistory().isAutoAdjust());
+				Map<LocalDate, BigDecimal> closeByDate = new HashMap<>();
+				if (hr != null && hr.getRows() != null) {
+					for (HistoryResponse.HistoryRow r : hr.getRows()) {
+						if (r.getClose() == null) continue;
+						LocalDate d = toKstDate(r.getTime());
+						closeByDate.put(d, BigDecimal.valueOf(r.getClose()));
+					}
+				}
+
+				Optional<BenchmarkDailyReturn> lastSavedOpt = repo.findTopBySymbolOrderByDateDesc(symbol);
+				LocalDate start = lastSavedOpt.map(e -> e.getDate().plusDays(1)).orElse(today.minusDays(7));
+				if (start.isAfter(today)) continue;
+
+				BigDecimal prevClose = lastSavedOpt.map(BenchmarkDailyReturn::getClose).orElse(null);
+				BigDecimal cum = lastSavedOpt.map(BenchmarkDailyReturn::getCumIndex).orElse(null);
+
+				for (LocalDate d = start; !d.isAfter(today); d = d.plusDays(1)) {
+					BigDecimal close = closeByDate.get(d);
+					BigDecimal daily = null;
+					if (close == null) {
+						if (prevClose == null) continue; // 아직 시드 없음
 						close = prevClose;
 						daily = BigDecimal.ZERO;
 					} else {

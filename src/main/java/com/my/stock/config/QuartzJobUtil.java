@@ -21,8 +21,6 @@ public class QuartzJobUtil {
 		QuartzJobUtil.jobLocator = jobLocator;
 	}
 	
-//	private static List<Map<String, Trigger>> listBatchJob = new ArrayList<>();
-
 	@Getter private static List<Trigger> triggers = new ArrayList<>();
 	@Getter private static List<JobDetail> jobDetails = new ArrayList<>();
 

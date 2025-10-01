@@ -34,7 +34,6 @@ import java.util.Optional;
 @Slf4j
 @Configuration
 @ScheduledBatch(job = "ToNightOverSeaStockPriceGettingJob", cron = "0 0/10 20-23 * * ?")
-@RequiredArgsConstructor
 public class NowOverSeaStockPriceGettingJobConfiguration {
 
 	private final StockRepository stockRepository;

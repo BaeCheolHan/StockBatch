@@ -1,6 +1,8 @@
 package com.my.stock.job;
 
 import com.my.stock.rdb.entity.*;
+import com.my.stock.batch.listener.PersistenceClearChunkListener;
+import com.my.stock.batch.listener.StepMetricsListener;
 import com.my.stock.rdb.repository.BankAccountRepository;
 import com.my.stock.rdb.repository.ExchangeRateRepository;
 import com.my.stock.rdb.repository.StocksRepository;
@@ -54,12 +56,16 @@ public class UserTwrDailyJobConfiguration {
     }
 
     @Bean
-    public Step userTwrDailyStep(JobRepository jobRepository, PlatformTransactionManager tm) {
+    public Step userTwrDailyStep(JobRepository jobRepository, PlatformTransactionManager tm,
+                                 StepMetricsListener stepMetricsListener,
+                                 PersistenceClearChunkListener persistenceClearChunkListener) {
         return new StepBuilder("userTwrDailyStep", jobRepository)
                 .<Member, UserDailyReturn>chunk(50, tm)
                 .reader(memberReaderForUsers())
                 .processor(userTwrProcessor())
                 .writer(userTwrWriter())
+                .listener(stepMetricsListener)
+                .listener(persistenceClearChunkListener)
                 .faultTolerant().retryLimit(3).retry(Exception.class).skipLimit(50).skip(Exception.class)
                 .build();
     }

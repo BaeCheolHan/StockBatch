@@ -1,6 +1,8 @@
 package com.my.stock.job;
 
 import com.my.stock.rdb.entity.*;
+import com.my.stock.batch.listener.PersistenceClearChunkListener;
+import com.my.stock.batch.listener.StepMetricsListener;
 import com.my.stock.rdb.repository.AccountDailyReturnRepository;
 import com.my.stock.rdb.repository.BankAccountRepository;
 import com.my.stock.rdb.repository.ExchangeRateRepository;
@@ -26,6 +28,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import com.my.stock.config.ScheduledBatch;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.beans.factory.annotation.Qualifier;
+import com.my.stock.util.BigDecimals;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -44,6 +49,7 @@ public class AccountTwrDailyJobConfiguration {
     private final OverSeaNowStockPriceRepository overSeaNowStockPriceRepository;
     private final ExchangeRateRepository exchangeRateRepository;
     private final AccountDailyReturnRepository accountDailyReturnRepository;
+    @Qualifier("batchTaskExecutor") private final TaskExecutor batchTaskExecutor;
 
     
 
@@ -55,13 +61,18 @@ public class AccountTwrDailyJobConfiguration {
     }
 
     @Bean
-    public Step accountTwrDailyStep(JobRepository jobRepository, PlatformTransactionManager tm) {
+    public Step accountTwrDailyStep(JobRepository jobRepository, PlatformTransactionManager tm,
+            StepMetricsListener stepMetricsListener,
+            PersistenceClearChunkListener persistenceClearChunkListener) {
         return new StepBuilder("accountTwrDailyStep", jobRepository)
                 .<Member, AccountDailyReturn>chunk(50, tm)
                 .reader(memberReaderForAccounts())
                 .processor(accountTwrProcessor())
                 .writer(accountTwrWriter())
+                .listener(stepMetricsListener)
+                .listener(persistenceClearChunkListener)
                 .faultTolerant().retryLimit(3).retry(Exception.class).skipLimit(50).skip(Exception.class)
+                .taskExecutor(batchTaskExecutor)
                 .build();
     }
 
@@ -104,11 +115,7 @@ public class AccountTwrDailyJobConfiguration {
             }
 
             BigDecimal netFlow = BigDecimal.ZERO;
-            BigDecimal daily = BigDecimal.ZERO;
-            if (navBegin.signum() != 0) {
-                daily = navEnd.subtract(navBegin).subtract(netFlow)
-                        .divide(navBegin, 10, java.math.RoundingMode.HALF_UP);
-            }
+            BigDecimal daily = BigDecimals.safeDivide(navEnd.subtract(navBegin).subtract(netFlow), navBegin, 10);
 
             BigDecimal cum = prevOpt.map(AccountDailyReturn::getCumIndex).orElse(BigDecimal.valueOf(100));
             cum = cum.multiply(BigDecimal.ONE.add(daily));
@@ -128,11 +135,7 @@ public class AccountTwrDailyJobConfiguration {
     @Bean
     @StepScope
     public ItemWriter<AccountDailyReturn> accountTwrWriter() {
-        return list -> {
-            for (AccountDailyReturn e : list) {
-                accountDailyReturnRepository.upsert(e);
-            }
-        };
+        return list -> list.forEach(accountDailyReturnRepository::upsert);
     }
 }
 

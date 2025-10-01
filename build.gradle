@@ -71,6 +71,7 @@ dependencies {
     // Resilience4j for retry/circuit breaker
     implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.1.0'
     implementation 'io.github.resilience4j:resilience4j-ratelimiter:2.1.0'
+    implementation 'org.flywaydb:flyway-core:9.22.3'
 
 
     annotationProcessor("com.querydsl:querydsl-apt:${queryDslVersion}:jakarta",
