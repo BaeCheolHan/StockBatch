@@ -1,6 +1,5 @@
 package com.my.stock.redis.entity;
 
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
@@ -217,6 +216,5 @@ public class KrNowStockPrice {
 	private String new_hgpr_lwpr_cls_code;
 
 	@TimeToLive(unit = TimeUnit.DAYS)
-	@Builder.Default
 	private Long expiration = 1L;
 }

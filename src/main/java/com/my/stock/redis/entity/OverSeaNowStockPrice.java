@@ -1,6 +1,5 @@
 package com.my.stock.redis.entity;
 
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
@@ -109,7 +108,6 @@ public class OverSeaNowStockPrice {
 	private String etyp_nm;
 
 	@TimeToLive(unit = TimeUnit.DAYS)
-	@Builder.Default
 	private Long expiration = 1L;
 
 }
